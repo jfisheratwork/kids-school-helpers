@@ -396,6 +396,8 @@ class EquationGenerator {
         }
         // Replace alignment operator '&=' with '=' for clean display
         f = f.replace(/&=/g, '=');
+        // Normalize any double-escaped backslashes to a single backslash
+        f = f.replace(/\\{2,}/g, '\\');
         return f.trim();
       }).filter(f => f.length > 0);
     });

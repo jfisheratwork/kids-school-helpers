@@ -448,15 +448,18 @@
       }
 
       // Visual Explanation Player
-      function playAnimation(frames) {
+      function playAnimation(frames, autoplay = false) {
         if (!frames || frames.length === 0) return;
         animFrames = frames;
         animIndex = 0;
-        animPlaying = true;
+        animPlaying = autoplay;
         
-        document.getElementById('btn-anim-play').textContent = "Pause";
+        document.getElementById('btn-anim-play').textContent = animPlaying ? "Pause" : "Play";
         showFrame(animIndex);
-        startAnimTimer();
+        if (animInterval) clearInterval(animInterval);
+        if (animPlaying) {
+          startAnimTimer();
+        }
       }
 
       function showFrame(index) {
@@ -479,7 +482,7 @@
         }, speedSeconds * 1000);
       }
 
-      function triggerVisualExplanation(stepIdx = currentStepIdx) {
+      function triggerVisualExplanation(stepIdx = currentStepIdx, autoplay = false) {
         if (!currentEquation || stepIdx >= currentEquation.steps.length) return;
         const targetStep = currentEquation.steps[stepIdx];
         if (!targetStep || !targetStep.animationFrames) return;
@@ -488,7 +491,7 @@
         const hintContainer = document.getElementById('hint-system-container');
 
         // Start animation playback
-        playAnimation(targetStep.animationFrames);
+        playAnimation(targetStep.animationFrames, autoplay);
 
         // Show visual explanation box
         explanationContainer.classList.remove('hidden');
@@ -522,8 +525,8 @@
           if (sessionId !== solveSessionId) break;
           const nextStep = currentEquation.steps[currentStepIdx];
 
-          // 1. Show the step in the visual explanation box
-          triggerVisualExplanation(currentStepIdx);
+          // 1. Show the step in the visual explanation box with autoplay enabled
+          triggerVisualExplanation(currentStepIdx, true);
 
           // 2. Wait for a short duration to let the user see the animation (e.g. 2.5 seconds)
           await new Promise(resolve => setTimeout(resolve, 2500));
