@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kids School Helpers</title>
+    <!-- Tailwind Release notes: https://github.com/tailwindlabs/tailwindcss/releases/tag/v3.4.4 -->
+    <script src="https://cdn.tailwindcss.com?version=3.4.4"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                DEFAULT: '#3B82F6',
+                dark: '#2563EB',
+                light: '#60A5FA'
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans antialiased min-h-screen flex flex-col items-center justify-center p-6">
+    <main class="max-w-2xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+        <div class="p-8 text-center bg-gradient-to-r from-brand to-brand-dark text-white">
+            <h1 class="text-4xl font-bold tracking-tight mb-2">Kids School Helpers</h1>
+            <p class="text-brand-light text-lg">Interactive educational tools and solvers.</p>
+        </div>
+        <div class="p-8">
+            <h2 class="text-xl font-semibold mb-6 text-gray-800">Available Applications</h2>
+            <ul class="space-y-4">
+                <li>
+                    <a href="./pre-algebra-solver/" class="group block p-6 bg-gray-50 rounded-xl border border-gray-200 hover:border-brand hover:shadow-md transition-all duration-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-semibold text-brand group-hover:text-brand-dark transition-colors">Pre-Algebra Solver &rarr;</h3>
+                                <p class="text-gray-600 mt-1">Interactive step-by-step solver and worksheet generator for linear equations.</p>
+                            </div>
+                        </div>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </main>
+</body>
+</html>

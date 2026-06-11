@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pre-Algebra Solver</title>
+    <!-- Tailwind CSS Release Notes: https://github.com/tailwindlabs/tailwindcss/releases/tag/v3.4.4 -->
+    <script src="https://cdn.tailwindcss.com?version=3.4.4"></script>
+    
+    <!-- KaTeX Release Notes: https://github.com/KaTeX/KaTeX/releases/tag/v0.16.10 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" integrity="sha384-wcIxkf4k558AjM3Yz3cFpJE/Tj/R2x2zE2qO4m2Yw2wZfVvJ2uBwJz4zX2e9B+y" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js" integrity="sha384-Hh0E/sR8YyVzXmR5k+eH48i01B5y0lV6B9vH1M0z5/6O+J4N1Z7gG/M2k6aG3C/C" crossorigin="anonymous"></script>
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              primary: '#6366f1',
+              secondary: '#4f46e5',
+            }
+          }
+        }
+      }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+            <a href="../" class="text-gray-500 hover:text-gray-700">&larr; Hub</a>
+            <h1 class="text-xl font-bold text-primary">Pre-Algebra Solver</h1>
+        </div>
+        <div class="flex space-x-2">
+            <button id="btn-mode-generator" class="px-4 py-2 rounded-md bg-primary text-white font-medium hover:bg-secondary transition">Generator</button>
+            <button id="btn-mode-solver" class="px-4 py-2 rounded-md bg-white text-gray-700 border border-gray-300 font-medium hover:bg-gray-50 transition">Solver</button>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="max-w-6xl mx-auto mt-8 p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Left/Center Column: History and Active Input -->
+        <div class="md:col-span-2 space-y-6 flex flex-col">
+            <!-- History Container -->
+            <div id="history-container" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-h-[200px]">
+                <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">History</h2>
+                <ul id="history-list" class="space-y-3 text-lg">
+                    <!-- Steps will be injected here -->
+                    <li class="text-gray-400 italic text-sm">No steps recorded yet.</li>
+                </ul>
+            </div>
+
+            <!-- Active Input Container -->
+            <div id="active-input-container" class="bg-white rounded-xl shadow-md border-l-4 border-primary p-6 relative flex-grow">
+                <h2 class="text-sm font-semibold text-primary uppercase tracking-wider mb-4">Current Step</h2>
+                <div class="text-center mb-6">
+                    <!-- Placeholder equation rendered, actual KaTeX will replace this -->
+                    <span id="current-equation-display" class="text-2xl font-medium tracking-wide">3(x - 2) = 15</span>
+                </div>
+                <div class="relative">
+                    <input type="text" id="step-input" placeholder="Type your next step here... (Press Tab for hint)" 
+                        class="w-full text-center text-xl p-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-mono" autocomplete="off">
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Hint System Container -->
+        <div class="md:col-span-1">
+            <div id="hint-system-container" class="bg-indigo-50 rounded-xl shadow-sm border border-indigo-100 p-6 sticky top-8">
+                <div class="flex items-center space-x-2 mb-4">
+                    <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <h2 class="text-sm font-bold text-indigo-800 uppercase tracking-wider">Objectives & Hints</h2>
+                </div>
+                <div id="hint-content" class="text-indigo-900 space-y-4 text-sm leading-relaxed">
+                    <p class="font-medium">Step 1: Distribute</p>
+                    <p>Multiply the number outside the parenthesis by each term inside.</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</body>
+</html>
