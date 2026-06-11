@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kids School Helpers - Integration Test Runner</title>
+    <!-- Tailwind CSS Release Notes: https://github.com/tailwindlabs/tailwindcss/releases/tag/v3.4.4 -->
+    <script src="https://cdn.tailwindcss.com?version=3.4.4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen p-8">
+    <main class="max-w-5xl mx-auto space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-200 pb-4">
+            <div>
+                <h1 class="text-3xl font-extrabold tracking-tight text-gray-900">Integration Test Runner</h1>
+                <p class="text-gray-500 text-sm mt-1">Headless browser session and E2E verification</p>
+            </div>
+            <a href="../pre-algebra-solver/" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">&larr; Back to App</a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Left Side: Test Status List -->
+            <div class="md:col-span-1 space-y-4">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
+                    <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Test Suite Progress</h2>
+                    <div id="summary-badge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 uppercase tracking-wide">
+                        Running...
+                    </div>
+                    <ul id="test-list" class="divide-y divide-gray-100 text-sm">
+                        <!-- Dynamic test status items injected here -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Right Side: Application Frame under Test -->
+            <div class="md:col-span-2 space-y-4">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                    <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Live Session Sandbox</h2>
+                    <iframe id="app-frame" src="../pre-algebra-solver/" class="w-full h-[650px] border border-gray-200 rounded-lg shadow-inner"></iframe>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Test Script Logic -->
+    <script>
+      const tests = [
+        {
+          name: "Verify Solver View Initialized",
+          fn: async (iframeWin, iframeDoc) => {
+            const display = iframeDoc.getElementById('current-equation-display');
+            if (!display) throw new Error("Display element not found");
+            
+            // Check if KaTeX has rendered something inside display
+            const katexHTML = display.querySelector('.katex');
+            if (!katexHTML) throw new Error("KaTeX failed to render the initial equation on load.");
+          }
+        },
+        {
+          name: "Verify Operator Tooltips Render",
+          fn: async (iframeWin, iframeDoc) => {
+            const display = iframeDoc.getElementById('current-equation-display');
+            const tooltip = iframeDoc.getElementById('custom-tooltip');
+            
+            // Hover over the first binary operator or fraction if present
+            const targetEl = display.querySelector('.mrel, .mbin, .mfrac, .mopen');
+            if (!targetEl) throw new Error("No math operator target found to hover over");
+
+            // Dispatch mouseover
+            const mouseOverEvent = new MouseEvent('mouseover', { bubbles: true, cancelable: true });
+            targetEl.dispatchEvent(mouseOverEvent);
+
+            // Wait brief moment
+            await new Promise(r => setTimeout(r, 100));
+
+            // Verify tooltip text is populated and opacity is updated
+            if (!tooltip.textContent.trim()) throw new Error("Tooltip content is empty after hover");
+            if (tooltip.classList.contains('opacity-0')) throw new Error("Tooltip did not become visible");
+
+            // Dispatch mouseout
+            const mouseOutEvent = new MouseEvent('mouseout', { bubbles: true, cancelable: true });
+            targetEl.dispatchEvent(mouseOutEvent);
+          }
+        },
+        {
+          name: "Verify Tab Key Cycles Hints (Paused By Default)",
+          fn: async (iframeWin, iframeDoc) => {
+            const input = iframeDoc.getElementById('step-input');
+            const explanationContainer = iframeDoc.getElementById('visual-explanation-container');
+            const display = iframeDoc.getElementById('visual-explanation-display');
+            const playBtn = iframeDoc.getElementById('btn-anim-play');
+
+            if (!input || !explanationContainer) throw new Error("Solver elements not found");
+
+            // Focus and trigger Tab key
+            input.focus();
+            const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+            input.dispatchEvent(tabEvent);
+
+            // Verify explanation box is visible
+            if (explanationContainer.classList.contains('hidden')) throw new Error("Visual explanation container remained hidden on Tab press");
+            
+            // Wait brief moment for rendering
+            await new Promise(r => setTimeout(r, 100));
+
+            // Verify KaTeX math rendered in the explanation frame
+            if (!display.querySelector('.katex')) throw new Error("Explanation frame did not render KaTeX");
+
+            // Verify that the animation starts in PAUSED state (Play button says "Play")
+            if (playBtn.textContent.trim() !== 'Play') throw new Error(`Animation expected to start paused, but play button says: ${playBtn.textContent}`);
+
+            // Verify that the text box remains empty (did not change)
+            if (input.value !== '') throw new Error(`Tab key expected to leave input box empty, but it got: "${input.value}"`);
+          }
+        },
+        {
+          name: "Verify Automated Solver ('solve')",
+          fn: async (iframeWin, iframeDoc) => {
+            const input = iframeDoc.getElementById('step-input');
+            const display = iframeDoc.getElementById('current-equation-display');
+            const historyList = iframeDoc.getElementById('history-list');
+
+            if (!input || !display) throw new Error("Solver elements not found");
+
+            // Set input value to 'solve' and hit Enter
+            input.value = "solve";
+            const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+            input.dispatchEvent(enterEvent);
+
+            // Verify input becomes disabled
+            if (!input.disabled) throw new Error("Input box was not disabled during solve automation");
+
+            // Wait for automation to complete. Max 3-step equation takes around 7.5 seconds.
+            // Let's poll every 500ms for up to 12 seconds until input placeholder changes to "Equation fully solved!"
+            let solved = false;
+            for (let i = 0; i < 24; i++) {
+              await new Promise(r => setTimeout(r, 500));
+              if (input.placeholder === "Equation fully solved!") {
+                solved = true;
+                break;
+              }
+            }
+
+            if (!solved) throw new Error(`Solver timed out. Current placeholder is: "${input.placeholder}"`);
+
+            // Verify final equation is x = <value>
+            if (!display.textContent.includes('x =')) throw new Error(`Final display did not isolate x. Got: "${display.textContent}"`);
+
+            // Verify history has recorded steps
+            if (historyList.children.length === 0 || historyList.children[0].classList.contains('italic')) {
+              throw new Error("History list did not record any solver steps");
+            }
+          }
+        },
+        {
+          name: "Verify Worksheet Generator Mode",
+          fn: async (iframeWin, iframeDoc) => {
+            const btnGen = iframeDoc.getElementById('btn-mode-generator');
+            if (!btnGen) throw new Error("Generator mode button not found");
+
+            // Switch to Generator mode
+            btnGen.click();
+            await new Promise(r => setTimeout(r, 200));
+
+            // Verify generator container is active
+            const generatorContainer = iframeDoc.getElementById('mode-generator-container');
+            if (generatorContainer.classList.contains('hidden')) throw new Error("Generator mode container did not display");
+
+            // Configure 6 problems
+            const selectCount = iframeDoc.getElementById('gen-count');
+            selectCount.value = "6";
+            
+            // Check Include Answer Key
+            const checkKey = iframeDoc.getElementById('gen-show-key');
+            checkKey.checked = true;
+
+            // Generate
+            const btnGenerateSheet = iframeDoc.getElementById('btn-generate-sheet');
+            btnGenerateSheet.click();
+            await new Promise(r => setTimeout(r, 500));
+
+            // Verify problem grid cells
+            const grid = iframeDoc.getElementById('worksheet-grid');
+            if (grid.children.length !== 6) throw new Error(`Expected 6 problems in the grid, but got: ${grid.children.length}`);
+
+            // Verify answer key grid cells
+            const keyGrid = iframeDoc.getElementById('worksheet-key-grid');
+            if (keyGrid.children.length !== 6) throw new Error(`Expected 6 answers in key grid, but got: ${keyGrid.children.length}`);
+
+            // Verify KaTeX math rendered in the cells
+            if (!grid.querySelector('.katex')) throw new Error("Worksheet problems did not render math");
+            if (!keyGrid.querySelector('.katex')) throw new Error("Answer key did not render math");
+          }
+        }
+      ];
+
+      async function runTestSuite() {
+        const iframe = document.getElementById('app-frame');
+        const listContainer = document.getElementById('test-list');
+        const summaryBadge = document.getElementById('summary-badge');
+
+        listContainer.innerHTML = '';
+        
+        // Render initial test list
+        tests.forEach((t, idx) => {
+          const li = document.createElement('li');
+          li.id = `test-item-${idx}`;
+          li.className = "py-4 flex flex-col space-y-1";
+          li.innerHTML = `
+            <div class="flex items-center justify-between">
+              <span class="font-medium text-gray-700">${t.name}</span>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-500 uppercase">Pending</span>
+            </div>
+          `;
+          listContainer.appendChild(li);
+        });
+
+        // Wait for iframe load
+        await new Promise(resolve => {
+          if (iframe.contentDocument && iframe.contentDocument.readyState === 'complete') {
+            resolve();
+          } else {
+            iframe.onload = resolve;
+          }
+        });
+
+        // Wait additional 500ms for KaTeX load and initialization in iframe
+        await new Promise(r => setTimeout(r, 500));
+
+        const iframeWin = iframe.contentWindow;
+        const iframeDoc = iframe.contentDocument;
+
+        const results = [];
+        let allPassed = true;
+
+        for (let i = 0; i < tests.length; i++) {
+          const t = tests[i];
+          const li = document.getElementById(`test-item-${i}`);
+          li.querySelector('span:last-child').className = "text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-800 uppercase animate-pulse";
+          li.querySelector('span:last-child').textContent = "Running";
+
+          try {
+            // Re-generate before running test if needed, or maintain state
+            // Let's run the test
+            await t.fn(iframeWin, iframeDoc);
+            
+            li.querySelector('span:last-child').className = "text-xs font-semibold px-2 py-0.5 rounded bg-green-100 text-green-800 uppercase";
+            li.querySelector('span:last-child').textContent = "Passed";
+            results.push({ name: t.name, passed: true });
+          } catch (err) {
+            allPassed = false;
+            li.querySelector('span:last-child').className = "text-xs font-semibold px-2 py-0.5 rounded bg-red-100 text-red-800 uppercase";
+            li.querySelector('span:last-child').textContent = "Failed";
+            
+            const errorP = document.createElement('p');
+            errorP.className = "text-xs text-red-600 font-mono bg-red-50 p-2 rounded border border-red-100 mt-2";
+            errorP.textContent = err.message;
+            li.appendChild(errorP);
+            
+            results.push({ name: t.name, passed: false, error: err.message });
+            
+            // Re-generate fresh equation inside app sandbox for subsequent tests so they are isolated
+            if (iframeWin.generateNew) {
+              try { iframeWin.generateNew(); } catch(e) {}
+            }
+          }
+        }
+
+        // Update overall summary badge
+        if (allPassed) {
+          summaryBadge.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 uppercase tracking-wide";
+          summaryBadge.textContent = "All Passed";
+        } else {
+          summaryBadge.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 uppercase tracking-wide";
+          summaryBadge.textContent = "Failed";
+        }
+
+        // Send results to the server
+        try {
+          await fetch('/api/test-results', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              timestamp: new Date().toISOString(),
+              allPassed: allPassed,
+              results: results
+            })
+          });
+        } catch (e) {
+          console.error("Failed to report results to local API endpoint:", e);
+        }
+      }
+
+      window.addEventListener('DOMContentLoaded', runTestSuite);
+    </script>
+</body>
+</html>

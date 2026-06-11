@@ -22,8 +22,32 @@ const MIME_TYPES = {
 const server = http.createServer((req, res) => {
   console.log(`${req.method} ${req.url}`);
 
-  // Normalize path and prevent directory traversal
   let safeUrl = req.url.split('?')[0];
+
+  // Gracefully handle favicon requests to prevent 404 errors
+  if (safeUrl === '/favicon.ico') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  // API endpoint for receiving integration test results
+  if (req.method === 'POST' && safeUrl === '/api/test-results') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        fs.writeFileSync(path.join(__dirname, 'test-results.json'), body, 'utf8');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'ok' }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Error writing results');
+      }
+    });
+    return;
+  }
+
   if (safeUrl.endsWith('/')) {
     safeUrl += 'index.html';
   }
