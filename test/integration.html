@@ -94,7 +94,7 @@
           }
         },
         {
-          name: "Verify Tab Key Cycles Hints (Paused By Default)",
+          name: "Verify Tab Key Cycles Hints (Autoplays By Default)",
           fn: async (iframeWin, iframeDoc) => {
             const input = iframeDoc.getElementById('step-input');
             const explanationContainer = iframeDoc.getElementById('visual-explanation-container');
@@ -102,6 +102,7 @@
             const playBtn = iframeDoc.getElementById('btn-anim-play');
 
             if (!input || !explanationContainer) throw new Error("Solver elements not found");
+            if (playBtn) throw new Error("Play button was expected to be removed from the DOM");
 
             // Focus and trigger Tab key
             input.focus();
@@ -117,8 +118,8 @@
             // Verify KaTeX math rendered in the explanation frame
             if (!display.querySelector('.katex')) throw new Error("Explanation frame did not render KaTeX");
 
-            // Verify that the animation starts in PAUSED state (Play button says "Play")
-            if (playBtn.textContent.trim() !== 'Play') throw new Error(`Animation expected to start paused, but play button says: ${playBtn.textContent}`);
+            // Verify that the animation starts in PLAYING state
+            if (!iframeWin.animPlaying) throw new Error("Animation expected to start playing automatically");
 
             // Verify that the text box remains empty (did not change)
             if (input.value !== '') throw new Error(`Tab key expected to leave input box empty, but it got: "${input.value}"`);
@@ -127,6 +128,14 @@
         {
           name: "Verify Automated Solver ('solve')",
           fn: async (iframeWin, iframeDoc) => {
+            // Unconditionally generate a fresh 2-step equation to prevent any timeout flakes
+            const stepsSel = iframeDoc.getElementById('config-steps');
+            if (stepsSel) {
+              stepsSel.value = "2";
+            }
+            iframeWin.generateNew();
+            await new Promise(r => setTimeout(r, 200));
+
             const input = iframeDoc.getElementById('step-input');
             const display = iframeDoc.getElementById('current-equation-display');
             const historyList = iframeDoc.getElementById('history-list');
