@@ -275,7 +275,7 @@ class EquationGenerator {
           lhsCoeff: sumAC, lhsConst: b,
           rhsCoeff: d, rhsConst: e,
           latex: `${EquationGenerator.formatLaTeXSide(sumAC, b)} = ${EquationGenerator.formatLaTeXSide(d, e)}`,
-          visualLaTeX: `\\begin{aligned} ${initialLHS} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ \\\\color{indigo}{${EquationGenerator.formatLaTeXTerm(a, 'x', true)}${EquationGenerator.formatLaTeXTerm(c, 'x', false)}} ${b.n < 0 ? '-' : '+'} ${Math.abs(b.toLaTeX())} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ ${EquationGenerator.formatLaTeXSide(sumAC, b)} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\end{aligned}`
+          visualLaTeX: `\\begin{aligned} ${initialLHS} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ \\color{indigo}{${EquationGenerator.formatLaTeXTerm(a, 'x', true)}${EquationGenerator.formatLaTeXTerm(c, 'x', false)}} ${b.n < 0 ? '-' : '+'} ${Math.abs(b.toLaTeX())} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ ${EquationGenerator.formatLaTeXSide(sumAC, b)} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\end{aligned}`
         });
 
         stepStates.push({
@@ -332,7 +332,7 @@ class EquationGenerator {
         description: 'Distribute the multiplication through the parenthesis.',
         lhsCoeff: a, lhsConst: ab,
         rhsCoeff: d, rhsConst: e,
-        visualLaTeX: `\\begin{aligned} ${initialLHS} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ \\\\color{indigo}{${a.toLaTeX()}\\cdot x ${b.n < 0 ? '-' : '+'} ${Math.abs(a.toLaTeX())}\\cdot ${Math.abs(b.toLaTeX())}} ${EquationGenerator.formatLaTeXTerm(c, 'x', false)} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ ${EquationGenerator.formatLaTeXTerm(a, 'x', true)}${EquationGenerator.formatLaTeXTerm(ab, '', false)}${EquationGenerator.formatLaTeXTerm(c, 'x', false)} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\end{aligned}`
+        visualLaTeX: `\\begin{aligned} ${initialLHS} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ \\color{indigo}{${a.toLaTeX()}\\cdot x ${b.n < 0 ? '-' : '+'} ${Math.abs(a.toLaTeX())}\\cdot ${Math.abs(b.toLaTeX())}} ${EquationGenerator.formatLaTeXTerm(c, 'x', false)} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ ${EquationGenerator.formatLaTeXTerm(a, 'x', true)}${EquationGenerator.formatLaTeXTerm(ab, '', false)}${EquationGenerator.formatLaTeXTerm(c, 'x', false)} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\end{aligned}`
       });
 
       stepStates.push({
@@ -342,7 +342,7 @@ class EquationGenerator {
         lhsCoeff: sumAC, lhsConst: ab,
         rhsCoeff: d, rhsConst: e,
         latex: `${EquationGenerator.formatLaTeXSide(sumAC, ab)} = ${EquationGenerator.formatLaTeXSide(d, e)}`,
-        visualLaTeX: `\\begin{aligned} ${EquationGenerator.formatLaTeXTerm(a, 'x', true)}${EquationGenerator.formatLaTeXTerm(ab, '', false)}${EquationGenerator.formatLaTeXTerm(c, 'x', false)} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ \\\\color{indigo}{${EquationGenerator.formatLaTeXTerm(a, 'x', true)}${EquationGenerator.formatLaTeXTerm(c, 'x', false)}} ${ab.n < 0 ? '-' : '+'} ${Math.abs(ab.toLaTeX())} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ ${EquationGenerator.formatLaTeXSide(sumAC, ab)} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\end{aligned}`
+        visualLaTeX: `\\begin{aligned} ${EquationGenerator.formatLaTeXTerm(a, 'x', true)}${EquationGenerator.formatLaTeXTerm(ab, '', false)}${EquationGenerator.formatLaTeXTerm(c, 'x', false)} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ \\color{indigo}{${EquationGenerator.formatLaTeXTerm(a, 'x', true)}${EquationGenerator.formatLaTeXTerm(c, 'x', false)}} ${ab.n < 0 ? '-' : '+'} ${Math.abs(ab.toLaTeX())} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ ${EquationGenerator.formatLaTeXSide(sumAC, ab)} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\end{aligned}`
       });
 
       stepStates.push({
@@ -351,7 +351,7 @@ class EquationGenerator {
         description: 'Move all variables to the left side.',
         lhsCoeff: netCoeff, lhsConst: ab,
         rhsCoeff: new Fraction(0), rhsConst: e,
-        visualLaTeX: `\\begin{aligned} ${EquationGenerator.formatLaTeXSide(sumAC, ab)} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ ${EquationGenerator.formatLaTeXSide(sumAC, ab)} \\\\color{indigo}{${EquationGenerator.formatLaTeXTerm(d.neg(), 'x', false)}} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\color{indigo}{${EquationGenerator.formatLaTeXTerm(d.neg(), 'x', false)}} \\\\ ${EquationGenerator.formatLaTeXSide(netCoeff, ab)} &= ${e.toLaTeX()} \\end{aligned}`
+        visualLaTeX: `\\begin{aligned} ${EquationGenerator.formatLaTeXSide(sumAC, ab)} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ ${EquationGenerator.formatLaTeXSide(sumAC, ab)} \\color{indigo}{${EquationGenerator.formatLaTeXTerm(d.neg(), 'x', false)}} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\color{indigo}{${EquationGenerator.formatLaTeXTerm(d.neg(), 'x', false)}} \\\\ ${EquationGenerator.formatLaTeXSide(netCoeff, ab)} &= ${e.toLaTeX()} \\end{aligned}`
       });
 
       stepStates.push({
