@@ -74,6 +74,10 @@ class Fraction {
     return new Fraction(-this.n, this.d);
   }
 
+  abs() {
+    return new Fraction(Math.abs(this.n), this.d);
+  }
+
   inv() {
     if (this.n === 0) throw new Error('Division by zero');
     return new Fraction(this.d, this.n);

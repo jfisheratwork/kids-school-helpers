@@ -190,6 +190,7 @@
                         <div class="relative">
                             <input type="text" id="step-input" placeholder="Type your next step here... (Press Tab for hint)" 
                                 class="w-full text-center text-xl p-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-mono" autocomplete="off">
+                            <div id="step-error-message" class="text-red-500 text-sm mt-2 text-center hidden font-medium"></div>
                         </div>
                     </div>
                 </div>
@@ -210,8 +211,8 @@
                                 <h3 class="text-xs font-bold text-indigo-500 uppercase tracking-wider">Visual Explanation</h3>
                                 <div class="flex items-center space-x-1.5 text-[10px] text-indigo-700 font-semibold bg-white border border-indigo-100 rounded-md px-2 py-1 shadow-sm">
                                     <span>Delay:</span>
-                                    <input type="range" id="anim-speed" min="0.5" max="3" step="0.1" value="1.2" class="w-12 h-1 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-primary">
-                                    <span id="anim-speed-display" class="w-7 text-right">1.2s</span>
+                                    <input type="range" id="anim-speed" min="1" max="20" step="0.5" value="8" class="w-12 h-1 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-primary">
+                                    <span id="anim-speed-display" class="w-7 text-right">8.0s</span>
                                 </div>
                             </div>
                             <div id="visual-explanation-display" class="bg-white rounded-lg p-4 shadow-inner text-center overflow-x-auto min-h-[4.5rem] flex items-center justify-center"></div>
@@ -331,7 +332,7 @@
     <script src="js/generator.js?v=1.0.1"></script>
     <script src="js/renderer.js?v=1.0.1"></script>
     <script>
-      let currentEquation = null;
+       let currentEquation = null;
       let currentStepIdx = 0;
       let hintStepIdx = 0;
       let solveSessionId = 0;
@@ -341,6 +342,42 @@
       let animFrames = [];
       let animIndex = 0;
       let animPlaying = false;
+
+      // Expose to window for integration testing
+      Object.defineProperty(window, 'currentEquation', {
+        get: () => currentEquation,
+        set: (val) => { currentEquation = val; }
+      });
+      Object.defineProperty(window, 'currentStepIdx', {
+        get: () => currentStepIdx,
+        set: (val) => { currentStepIdx = val; }
+      });
+      Object.defineProperty(window, 'hintStepIdx', {
+        get: () => hintStepIdx,
+        set: (val) => { hintStepIdx = val; }
+      });
+      Object.defineProperty(window, 'animIndex', {
+        get: () => animIndex,
+        set: (val) => { animIndex = val; }
+      });
+      Object.defineProperty(window, 'animFrames', {
+        get: () => animFrames,
+        set: (val) => { animFrames = val; }
+      });
+
+      window.copyAnswerToInput = function(val) {
+        const input = document.getElementById('step-input');
+        if (input) {
+          input.value = val;
+          input.focus();
+          input.classList.remove('border-red-500', 'focus:border-red-500');
+          const errEl = document.getElementById('step-error-message');
+          if (errEl) {
+            errEl.classList.add('hidden');
+            errEl.textContent = '';
+          }
+        }
+      };
 
       function generateNew() {
         solveSessionId++;
@@ -361,8 +398,7 @@
         
         // Render initial equation
         const equationLaTeX = `${currentEquation.initialLHS} = ${currentEquation.initialRHS}`;
-        const displayElem = document.getElementById('current-equation-display');
-        MathRenderer.renderBlock(equationLaTeX, displayElem);
+        updateCurrentEquationDisplay(equationLaTeX);
         setTimeout(setupOperatorTooltips, 50);
 
         // Clear history
@@ -395,40 +431,58 @@
         inputElem.placeholder = "Type your next step here... (Press Tab for hint)";
       }
 
-      function updateHints() {
+      function updateHints(stepIdx = currentStepIdx) {
         const hintContent = document.getElementById('hint-content');
-        if (!currentEquation || currentStepIdx >= currentEquation.steps.length) {
+        if (!currentEquation || stepIdx >= currentEquation.steps.length) {
           hintContent.innerHTML = '<p class="text-green-600 font-medium">Equation Solved! Great job!</p>';
           return;
         }
-        const nextStep = currentEquation.steps[currentStepIdx];
+        const nextStep = currentEquation.steps[stepIdx];
+        const isFinalStep = (stepIdx === currentEquation.steps.length - 1);
+        const stepNumDisplay = `Step ${stepIdx + 1} of ${currentEquation.steps.length}`;
+        const finalBadge = isFinalStep ? ` <span class="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ml-2 shadow-sm border border-green-200">Final Step</span>` : '';
         
-        let objective = '';
+        let objectiveTitle = '';
         let hint = '';
         switch (nextStep.type) {
           case 'distribute':
-            objective = 'Step 1: Distribute';
+            objectiveTitle = 'Distribute';
             hint = 'Multiply the term outside the parentheses with all terms inside the parentheses.';
             break;
           case 'combine':
-            objective = 'Step 2: Combine Like Terms';
+            objectiveTitle = 'Combine Like Terms';
             hint = 'Combine matching variable terms and matching constant terms on each side.';
             break;
           case 'move_variables':
-            objective = 'Step 3: Move Variables';
+            objectiveTitle = 'Move Variables';
             hint = 'Add or subtract variable terms to move them all to the left-hand side.';
             break;
           case 'move_constants':
-            objective = 'Step 4: Move Constants';
+            objectiveTitle = 'Move Constants';
             hint = 'Add or subtract constants to move them all to the right-hand side.';
             break;
           case 'isolate':
-            objective = 'Step 5: Isolate Variable';
-            hint = 'Divide both sides by the coefficient of x to find the final value.';
+            objectiveTitle = 'Isolate Variable';
+            hint = `Divide both sides by the coefficient of x to find the final value.
+                    <div class="mt-4 p-3.5 bg-green-50 border border-green-200 rounded-xl shadow-sm">
+                      <div class="flex items-center space-x-1.5 text-green-800 font-bold text-xs uppercase tracking-wider mb-2">
+                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span>Final Step - Target Answer</span>
+                      </div>
+                      <p class="text-xs text-green-700 mb-2.5">Click the answer below to auto-populate the input box, or copy it:</p>
+                      <div onclick="copyAnswerToInput('x = ${currentEquation.solution.toString()}')" 
+                           class="font-mono font-bold text-green-900 text-lg bg-white border border-green-200 rounded-lg px-4 py-2 cursor-pointer hover:bg-green-100/50 hover:border-green-300 transition duration-200 shadow-sm inline-block select-all" 
+                           title="Click to insert into input field">
+                        x = ${currentEquation.solution.toString()}
+                      </div>
+                    </div>`;
             break;
         }
         hintContent.innerHTML = `
-          <p class="font-bold text-indigo-900">${objective}</p>
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <p class="font-bold text-indigo-900">${stepNumDisplay}: ${objectiveTitle}</p>
+            ${finalBadge}
+          </div>
           <p class="mt-2 text-indigo-700">${hint}</p>
         `;
       }
@@ -448,6 +502,7 @@
       }
 
       // Visual Explanation Player
+      // Visual Explanation Player
       function playAnimation(frames, autoplay = false) {
         if (!frames || frames.length === 0) return;
         animFrames = frames;
@@ -462,12 +517,71 @@
         }
       }
 
+      function applyViewTransitionNames(container, prefix = '') {
+        container.querySelectorAll('[id]').forEach(el => {
+          el.style.viewTransitionName = prefix + el.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+        });
+      }
+
+      function updateCurrentEquationDisplay(latex) {
+        const display = document.getElementById('current-equation-display');
+        if (!document.startViewTransition) {
+          MathRenderer.renderBlock(latex, display);
+          applyViewTransitionNames(display, 'eq_');
+          return;
+        }
+        display.querySelectorAll('[id]').forEach(el => {
+          el.style.viewTransitionName = 'eq_' + el.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+        });
+        document.startViewTransition(() => {
+          MathRenderer.renderBlock(latex, display);
+          applyViewTransitionNames(display, 'eq_');
+        });
+      }
+
+      function updateAnimationButtons() {
+        const btnPrev = document.getElementById('btn-anim-prev');
+        const btnNext = document.getElementById('btn-anim-next');
+        
+        if (!currentEquation) return;
+        
+        // Next button text
+        if (animIndex === animFrames.length - 1 && hintStepIdx < currentEquation.steps.length - 1) {
+          btnNext.innerHTML = `Step ${hintStepIdx + 2} &rarr;`;
+        } else {
+          btnNext.innerHTML = `Next &rarr;`;
+        }
+        
+        // Back button text
+        if (animIndex === 0 && hintStepIdx > currentStepIdx) {
+          btnPrev.innerHTML = `&larr; Step ${hintStepIdx}`;
+        } else {
+          btnPrev.innerHTML = `&larr; Back`;
+        }
+      }
+
       function showFrame(index) {
         const display = document.getElementById('visual-explanation-display');
         const counter = document.getElementById('anim-frame-counter');
         
-        MathRenderer.renderBlock(animFrames[index], display);
-        counter.textContent = `${index + 1}/${animFrames.length}`;
+        if (!document.startViewTransition) {
+          MathRenderer.renderBlock(animFrames[index], display);
+          applyViewTransitionNames(display, 'vis_');
+          counter.textContent = `${index + 1}/${animFrames.length}`;
+          updateAnimationButtons();
+          return;
+        }
+        
+        display.querySelectorAll('[id]').forEach(el => {
+          el.style.viewTransitionName = 'vis_' + el.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+        });
+
+        document.startViewTransition(() => {
+          MathRenderer.renderBlock(animFrames[index], display);
+          applyViewTransitionNames(display, 'vis_');
+          counter.textContent = `${index + 1}/${animFrames.length}`;
+          updateAnimationButtons();
+        });
       }
 
       function startAnimTimer() {
@@ -477,8 +591,14 @@
         
         animInterval = setInterval(() => {
           if (!animPlaying) return;
-          animIndex = (animIndex + 1) % animFrames.length;
-          showFrame(animIndex);
+          if (animIndex < animFrames.length - 1) {
+            animIndex++;
+            showFrame(animIndex);
+          } else {
+            animPlaying = false;
+            document.getElementById('btn-anim-play').textContent = "Play";
+            clearInterval(animInterval);
+          }
         }, speedSeconds * 1000);
       }
 
@@ -492,6 +612,9 @@
 
         // Start animation playback
         playAnimation(targetStep.animationFrames, autoplay);
+
+        // Update active hint to match visual explanation step
+        updateHints(stepIdx);
 
         // Show visual explanation box
         explanationContainer.classList.remove('hidden');
@@ -553,11 +676,11 @@
 
           // 5. Update main display
           if (currentStepIdx >= currentEquation.steps.length) {
-            MathRenderer.renderBlock(`x = ${currentEquation.solution.toLaTeX()}`, document.getElementById('current-equation-display'));
+            updateCurrentEquationDisplay(`x = ${currentEquation.solution.toLaTeX()}`);
             inputElem.placeholder = "Equation fully solved!";
             inputElem.value = '';
           } else {
-            MathRenderer.renderBlock(nextStep.latex, document.getElementById('current-equation-display'));
+            updateCurrentEquationDisplay(nextStep.latex);
             setTimeout(setupOperatorTooltips, 50);
           }
 
@@ -664,16 +787,36 @@
         animPlaying = false;
         document.getElementById('btn-anim-play').textContent = "Play";
         if (animInterval) clearInterval(animInterval);
-        animIndex = (animIndex - 1 + animFrames.length) % animFrames.length;
-        showFrame(animIndex);
+        
+        if (animIndex > 0) {
+          animIndex--;
+          showFrame(animIndex);
+        } else if (animIndex === 0 && hintStepIdx > currentStepIdx) {
+          hintStepIdx--;
+          const targetStep = currentEquation.steps[hintStepIdx];
+          animFrames = targetStep.animationFrames;
+          animIndex = animFrames.length - 1;
+          showFrame(animIndex);
+          updateHints(hintStepIdx);
+        }
       });
-
+ 
       document.getElementById('btn-anim-next').addEventListener('click', function() {
         animPlaying = false;
         document.getElementById('btn-anim-play').textContent = "Play";
         if (animInterval) clearInterval(animInterval);
-        animIndex = (animIndex + 1) % animFrames.length;
-        showFrame(animIndex);
+        
+        if (animIndex < animFrames.length - 1) {
+          animIndex++;
+          showFrame(animIndex);
+        } else if (animIndex === animFrames.length - 1 && hintStepIdx < currentEquation.steps.length - 1) {
+          hintStepIdx++;
+          const targetStep = currentEquation.steps[hintStepIdx];
+          animFrames = targetStep.animationFrames;
+          animIndex = 0;
+          showFrame(animIndex);
+          updateHints(hintStepIdx);
+        }
       });
 
       document.getElementById('config-show-key').addEventListener('change', updateDevKeyVisibility);
@@ -699,6 +842,10 @@
             this.classList.remove('border-red-500', 'focus:border-red-500');
             this.classList.add('border-green-500', 'focus:border-green-500');
             
+            const errEl = document.getElementById('step-error-message');
+            errEl.classList.add('hidden');
+            errEl.textContent = '';
+            
             const historyList = document.getElementById('history-list');
             if (currentStepIdx === 0) {
               historyList.innerHTML = '';
@@ -723,9 +870,9 @@
               this.disabled = true;
               this.placeholder = "Equation fully solved!";
               this.value = '';
-              MathRenderer.renderBlock(`x = ${currentEquation.solution.toLaTeX()}`, document.getElementById('current-equation-display'));
+              updateCurrentEquationDisplay(`x = ${currentEquation.solution.toLaTeX()}`);
             } else {
-              MathRenderer.renderBlock(nextStep.latex, document.getElementById('current-equation-display'));
+              updateCurrentEquationDisplay(nextStep.latex);
               this.value = '';
               this.classList.remove('border-green-500', 'focus:border-green-500');
               setTimeout(setupOperatorTooltips, 50);
@@ -734,7 +881,9 @@
           } else {
             this.classList.remove('border-green-500', 'focus:border-green-500');
             this.classList.add('border-red-500', 'focus:border-red-500');
-            alert(validation.errorMsg);
+            const errEl = document.getElementById('step-error-message');
+            errEl.textContent = validation.errorMsg;
+            errEl.classList.remove('hidden');
           }
         }
 
@@ -746,12 +895,18 @@
           // Animate and show visual explanation for the step at hintStepIdx
           triggerVisualExplanation(hintStepIdx);
 
-          // Advance hintStepIdx for subsequent Tab presses, wrapping back to currentStepIdx
-          hintStepIdx++;
-          if (hintStepIdx >= currentEquation.steps.length) {
-            hintStepIdx = currentStepIdx;
+          // Advance hintStepIdx for subsequent Tab presses, stopping at the last step instead of wrapping back
+          if (hintStepIdx < currentEquation.steps.length - 1) {
+            hintStepIdx++;
           }
         }
+      });
+
+      document.getElementById('step-input').addEventListener('input', function() {
+        this.classList.remove('border-red-500', 'focus:border-red-500');
+        const errEl = document.getElementById('step-error-message');
+        errEl.classList.add('hidden');
+        errEl.textContent = '';
       });
 
       document.getElementById('btn-generate').addEventListener('click', generateNew);

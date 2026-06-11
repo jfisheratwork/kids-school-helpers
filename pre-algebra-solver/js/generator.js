@@ -1,7 +1,7 @@
 // Requires Fraction class to be loaded first.
 
 class EquationGenerator {
-  static formatLaTeXTerm(coeff, varSymbol, isLeading) {
+  static formatLaTeXTerm(coeff, varSymbol, isLeading, idPrefix) {
     coeff = Fraction.cast(coeff);
     if (coeff.n === 0) return '';
     
@@ -14,44 +14,64 @@ class EquationGenerator {
       str += '+';
     }
     
+    let termContent = '';
     if (varSymbol) {
       if (absCoeff.equals(1)) {
-        str += varSymbol;
+        termContent = varSymbol;
       } else {
-        str += absCoeff.toLaTeX() + varSymbol;
+        termContent = absCoeff.toLaTeX() + varSymbol;
       }
     } else {
-      str += absCoeff.toLaTeX();
+      termContent = absCoeff.toLaTeX();
+    }
+    
+    if (idPrefix) {
+      str += `\\htmlId{${idPrefix}}{${termContent}}`;
+    } else {
+      str += termContent;
     }
     
     return str;
   }
 
-  static formatLaTeXSide(coeff, constant) {
+  static formatLaTeXSide(coeff, constant, prefix) {
     coeff = Fraction.cast(coeff);
     constant = Fraction.cast(constant);
     
     if (coeff.n === 0 && constant.n === 0) return '0';
     
-    let term1 = EquationGenerator.formatLaTeXTerm(coeff, 'x', true);
-    let term2 = EquationGenerator.formatLaTeXTerm(constant, '', term1 === '');
+    let term1 = EquationGenerator.formatLaTeXTerm(coeff, 'x', true, prefix ? `${prefix}-var` : null);
+    let term2 = EquationGenerator.formatLaTeXTerm(constant, '', term1 === '', prefix ? `${prefix}-const` : null);
     
     return term1 + term2;
   }
 
-  static formatLaTeXParenthesis(a, b) {
+  static formatLaTeXParenthesis(a, b, prefix) {
     a = Fraction.cast(a);
     b = Fraction.cast(b);
     
-    let prefix = '';
+    let signPrefix = '';
+    let termPrefix = '';
     if (a.equals(-1)) {
-      prefix = '-';
+      signPrefix = '-';
     } else if (!a.equals(1)) {
-      prefix = a.toLaTeX();
+      if (a.n < 0) {
+        signPrefix = '-';
+        termPrefix = a.abs().toLaTeX();
+      } else {
+        termPrefix = a.toLaTeX();
+      }
     }
     
-    let inner = EquationGenerator.formatLaTeXSide(new Fraction(1), b);
-    return `${prefix}(${inner})`;
+    let inside = EquationGenerator.formatLaTeXSide(new Fraction(1), b, prefix ? `${prefix}-inner` : null);
+    
+    if (prefix) {
+      let outsideTerm = termPrefix ? `\\htmlId{${prefix}-out-coeff}{${termPrefix}}` : '';
+      return `${signPrefix}${outsideTerm}(\\htmlId{${prefix}-in}{${inside}})`;
+    } else {
+      let outsideTerm = termPrefix ? termPrefix : '';
+      return `${signPrefix}${outsideTerm}(${inside})`;
+    }
   }
 
   static randomVal(allowNegatives, allowFractions) {
@@ -94,8 +114,8 @@ class EquationGenerator {
       if (useMult) {
         const a = EquationGenerator.randomVal(allowNegatives, allowFractions);
         const b = a.mul(S);
-        initialLHS = EquationGenerator.formatLaTeXSide(a, 0);
-        initialRHS = EquationGenerator.formatLaTeXSide(0, b);
+        initialLHS = EquationGenerator.formatLaTeXSide(a, 0, 'lhs');
+        initialRHS = EquationGenerator.formatLaTeXSide(0, b, 'rhs');
         
         stepStates.push({
           stepNum: 5,
@@ -104,13 +124,13 @@ class EquationGenerator {
           lhsCoeff: new Fraction(1), lhsConst: new Fraction(0),
           rhsCoeff: new Fraction(0), rhsConst: S,
           latex: `x = ${S.toLaTeX()}`,
-          visualLaTeX: `\\begin{aligned} ${initialLHS} &= ${b.toLaTeX()} \\\\ \\frac{${initialLHS}}{\\color{indigo}{${a.toLaTeX()}}} &= \\frac{${b.toLaTeX()}}{\\color{indigo}{${a.toLaTeX()}}} \\\\ x &= ${S.toLaTeX()} \\end{aligned}`
+          visualLaTeX: `\\begin{aligned} ${initialLHS} &= ${initialRHS} \\\\ \\frac{${initialLHS}}{\\color{indigo}{\\htmlId{div-lhs}{${a.toLaTeX()}}}} &= \\frac{${initialRHS}}{\\color{indigo}{\\htmlId{div-rhs}{${a.toLaTeX()}}}} \\\\ \\htmlId{lhs-var}{x} &= \\htmlId{rhs-const}{${S.toLaTeX()}} \\end{aligned}`
         });
       } else {
         const a = EquationGenerator.randomVal(allowNegatives, allowFractions);
         const b = S.add(a);
-        initialLHS = EquationGenerator.formatLaTeXSide(1, a);
-        initialRHS = EquationGenerator.formatLaTeXSide(0, b);
+        initialLHS = EquationGenerator.formatLaTeXSide(1, a, 'lhs');
+        initialRHS = EquationGenerator.formatLaTeXSide(0, b, 'rhs');
 
         stepStates.push({
           stepNum: 5,
@@ -119,7 +139,10 @@ class EquationGenerator {
           lhsCoeff: new Fraction(1), lhsConst: new Fraction(0),
           rhsCoeff: new Fraction(0), rhsConst: S,
           latex: `x = ${S.toLaTeX()}`,
-          visualLaTeX: `\\begin{aligned} ${initialLHS} &= ${b.toLaTeX()} \\\\ x ${a.n < 0 ? '+' : '-'} ${Math.abs(a.toLaTeX())} \\color{indigo}{${a.n < 0 ? '+' : '-'} ${Math.abs(a.toLaTeX())}} &= ${b.toLaTeX()} \\color{indigo}{${a.n < 0 ? '+' : '-'} ${Math.abs(a.toLaTeX())}} \\\\ x &= ${S.toLaTeX()} \\end{aligned}`
+          visualLaTeX: `\\begin{aligned} ${initialLHS} &= ${initialRHS} \\\\ \\htmlId{lhs-var}{x} ${a.n < 0 ? '+' : '-'} \\htmlId{lhs-const}{${a.abs().toLaTeX()}} \\color{indigo}{${a.n < 0 ? '+' : '-'} \\htmlId{add-lhs}{${a.abs().toLaTeX()}}} &= \\htmlId{rhs-const}{${b.toLaTeX()}} \\color{indigo}{${a.n < 0 ? '+' : '-'} \\htmlId{add-rhs}{${a.abs().toLaTeX()}}} \\\\ \\htmlId{lhs-var}{x} &= \\htmlId{rhs-const}{${S.toLaTeX()}} \\end{aligned}`,
+          isolateCoeff: new Fraction(1),
+          isolateConst: b,
+          isolateAddConst: a
         });
       }
     } else if (steps === 2) {
@@ -127,8 +150,8 @@ class EquationGenerator {
       const b = EquationGenerator.randomVal(allowNegatives, allowFractions);
       const c = a.mul(S).add(b);
 
-      initialLHS = EquationGenerator.formatLaTeXSide(a, b);
-      initialRHS = EquationGenerator.formatLaTeXSide(0, c);
+      initialLHS = EquationGenerator.formatLaTeXSide(a, b, 'lhs');
+      initialRHS = EquationGenerator.formatLaTeXSide(0, c, 'rhs');
 
       const intermediateConst = a.mul(S);
 
@@ -139,8 +162,13 @@ class EquationGenerator {
         lhsCoeff: a, lhsConst: new Fraction(0),
         rhsCoeff: new Fraction(0), rhsConst: intermediateConst,
         latex: `${EquationGenerator.formatLaTeXSide(a, 0)} = ${intermediateConst.toLaTeX()}`,
-        visualLaTeX: `\\begin{aligned} ${initialLHS} &= ${c.toLaTeX()} \\\\ ${initialLHS} \\color{indigo}{${b.n < 0 ? '+' : '-'} ${Math.abs(b.toLaTeX())}} &= ${c.toLaTeX()} \\color{indigo}{${b.n < 0 ? '+' : '-'} ${Math.abs(b.toLaTeX())}} \\\\ ${EquationGenerator.formatLaTeXSide(a, 0)} &= ${intermediateConst.toLaTeX()} \\end{aligned}`
+        visualLaTeX: `\\begin{aligned} ${initialLHS} &= ${initialRHS} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(a, 0)}} ${b.n < 0 ? '-' : '+'} \\htmlId{lhs-const}{${b.abs().toLaTeX()}} \\color{indigo}{${b.n < 0 ? '+' : '-'} \\htmlId{add-lhs}{${b.abs().toLaTeX()}}} &= \\htmlId{rhs-const}{${c.toLaTeX()}} \\color{indigo}{${b.n < 0 ? '+' : '-'} \\htmlId{add-rhs}{${b.abs().toLaTeX()}}} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(a, 0)}} &= \\htmlId{rhs-const}{${intermediateConst.toLaTeX()}} \\end{aligned}`,
+        originalLHSConst: b,
+        originalRHSConst: c,
       });
+
+      const LHS_isolate = EquationGenerator.formatLaTeXSide(a, 0, 'lhs');
+      const RHS_isolate = EquationGenerator.formatLaTeXSide(0, intermediateConst, 'rhs');
 
       stepStates.push({
         stepNum: 5,
@@ -149,7 +177,9 @@ class EquationGenerator {
         lhsCoeff: new Fraction(1), lhsConst: new Fraction(0),
         rhsCoeff: new Fraction(0), rhsConst: S,
         latex: `x = ${S.toLaTeX()}`,
-        visualLaTeX: `\\begin{aligned} ${EquationGenerator.formatLaTeXSide(a, 0)} &= ${intermediateConst.toLaTeX()} \\\\ \\frac{${EquationGenerator.formatLaTeXSide(a, 0)}}{\\color{indigo}{${a.toLaTeX()}}} &= \\frac{${intermediateConst.toLaTeX()}}{\\color{indigo}{${a.toLaTeX()}}} \\\\ x &= ${S.toLaTeX()} \\end{aligned}`
+        visualLaTeX: `\\begin{aligned} ${LHS_isolate} &= ${RHS_isolate} \\\\ \\frac{${LHS_isolate}}{\\color{indigo}{\\htmlId{div-lhs}{${a.toLaTeX()}}}} &= \\frac{${RHS_isolate}}{\\color{indigo}{\\htmlId{div-rhs}{${a.toLaTeX()}}}} \\\\ \\htmlId{lhs-var}{x} &= \\htmlId{rhs-const}{${S.toLaTeX()}} \\end{aligned}`,
+        isolateCoeff: a,
+        isolateConst: intermediateConst,
       });
     } else if (steps === 3) {
       const a = EquationGenerator.randomVal(allowNegatives, allowFractions);
@@ -160,8 +190,8 @@ class EquationGenerator {
       const b = EquationGenerator.randomVal(allowNegatives, allowFractions);
       const d = a.sub(c).mul(S).add(b);
 
-      initialLHS = EquationGenerator.formatLaTeXSide(a, b);
-      initialRHS = EquationGenerator.formatLaTeXSide(c, d);
+      initialLHS = EquationGenerator.formatLaTeXSide(a, b, 'lhs');
+      initialRHS = EquationGenerator.formatLaTeXSide(c, d, 'rhs');
 
       const netCoeff = a.sub(c);
       const intermediateConst = netCoeff.mul(S);
@@ -173,8 +203,13 @@ class EquationGenerator {
         lhsCoeff: netCoeff, lhsConst: b,
         rhsCoeff: new Fraction(0), rhsConst: d,
         latex: `${EquationGenerator.formatLaTeXSide(netCoeff, b)} = ${d.toLaTeX()}`,
-        visualLaTeX: `\\begin{aligned} ${initialLHS} &= ${EquationGenerator.formatLaTeXSide(c, d)} \\\\ ${initialLHS} \\color{indigo}{${EquationGenerator.formatLaTeXTerm(c.neg(), 'x', false)}} &= ${EquationGenerator.formatLaTeXSide(c, d)} \\color{indigo}{${EquationGenerator.formatLaTeXTerm(c.neg(), 'x', false)}} \\\\ ${EquationGenerator.formatLaTeXSide(netCoeff, b)} &= ${d.toLaTeX()} \\end{aligned}`
+        visualLaTeX: `\\begin{aligned} ${initialLHS} &= ${initialRHS} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXTerm(a, 'x', true)}} ${EquationGenerator.formatLaTeXTerm(b, '', false, 'lhs-const')} \\color{indigo}{${EquationGenerator.formatLaTeXTerm(c.neg(), 'x', false, 'add-lhs')}} &= \\htmlId{rhs-var}{${EquationGenerator.formatLaTeXTerm(c, 'x', true)}} ${EquationGenerator.formatLaTeXTerm(d, '', false, 'rhs-const')} \\color{indigo}{${EquationGenerator.formatLaTeXTerm(c.neg(), 'x', false, 'add-rhs')}} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(netCoeff, 0)}} ${EquationGenerator.formatLaTeXTerm(b, '', false, 'lhs-const')} &= \\htmlId{rhs-const}{${d.toLaTeX()}} \\end{aligned}`,
+        originalLHSCoeff: a,
+        originalRHSCoeff: c,
       });
+
+      const LHS_move = EquationGenerator.formatLaTeXSide(netCoeff, b, 'lhs');
+      const RHS_move = EquationGenerator.formatLaTeXSide(0, d, 'rhs');
 
       stepStates.push({
         stepNum: 4,
@@ -183,8 +218,13 @@ class EquationGenerator {
         lhsCoeff: netCoeff, lhsConst: new Fraction(0),
         rhsCoeff: new Fraction(0), rhsConst: intermediateConst,
         latex: `${EquationGenerator.formatLaTeXSide(netCoeff, 0)} = ${intermediateConst.toLaTeX()}`,
-        visualLaTeX: `\\begin{aligned} ${EquationGenerator.formatLaTeXSide(netCoeff, b)} &= ${d.toLaTeX()} \\\\ ${EquationGenerator.formatLaTeXSide(netCoeff, b)} \\color{indigo}{${b.n < 0 ? '+' : '-'} ${Math.abs(b.toLaTeX())}} &= ${d.toLaTeX()} \\color{indigo}{${b.n < 0 ? '+' : '-'} ${Math.abs(b.toLaTeX())}} \\\\ ${EquationGenerator.formatLaTeXSide(netCoeff, 0)} &= ${intermediateConst.toLaTeX()} \\end{aligned}`
+        visualLaTeX: `\\begin{aligned} ${LHS_move} &= ${RHS_move} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(netCoeff, 0)}} ${b.n < 0 ? '-' : '+'} \\htmlId{lhs-const}{${b.abs().toLaTeX()}} \\color{indigo}{${b.n < 0 ? '+' : '-'} \\htmlId{add-lhs}{${b.abs().toLaTeX()}}} &= \\htmlId{rhs-const}{${d.toLaTeX()}} \\color{indigo}{${b.n < 0 ? '+' : '-'} \\htmlId{add-rhs}{${b.abs().toLaTeX()}}} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(netCoeff, 0)}} &= \\htmlId{rhs-const}{${intermediateConst.toLaTeX()}} \\end{aligned}`,
+        originalLHSConst: b,
+        originalRHSConst: d,
       });
+
+      const LHS_isolate = EquationGenerator.formatLaTeXSide(netCoeff, 0, 'lhs');
+      const RHS_isolate = EquationGenerator.formatLaTeXSide(0, intermediateConst, 'rhs');
 
       stepStates.push({
         stepNum: 5,
@@ -193,7 +233,9 @@ class EquationGenerator {
         lhsCoeff: new Fraction(1), lhsConst: new Fraction(0),
         rhsCoeff: new Fraction(0), rhsConst: S,
         latex: `x = ${S.toLaTeX()}`,
-        visualLaTeX: `\\begin{aligned} ${EquationGenerator.formatLaTeXSide(netCoeff, 0)} &= ${intermediateConst.toLaTeX()} \\\\ \\frac{${EquationGenerator.formatLaTeXSide(netCoeff, 0)}}{\\color{indigo}{${netCoeff.toLaTeX()}}} &= \\frac{${intermediateConst.toLaTeX()}}{\\color{indigo}{${netCoeff.toLaTeX()}}} \\\\ x &= ${S.toLaTeX()} \\end{aligned}`
+        visualLaTeX: `\\begin{aligned} ${LHS_isolate} &= ${RHS_isolate} \\\\ \\frac{${LHS_isolate}}{\\color{indigo}{\\htmlId{div-lhs}{${netCoeff.toLaTeX()}}}} &= \\frac{${RHS_isolate}}{\\color{indigo}{\\htmlId{div-rhs}{${netCoeff.toLaTeX()}}}} \\\\ \\htmlId{lhs-var}{x} &= \\htmlId{rhs-const}{${S.toLaTeX()}} \\end{aligned}`,
+        isolateCoeff: netCoeff,
+        isolateConst: intermediateConst,
       });
     } else if (steps === 4) {
       if (allowParenthesis) {
@@ -206,8 +248,8 @@ class EquationGenerator {
         const ab = a.mul(b);
         const d = a.sub(c).mul(S).add(ab);
 
-        initialLHS = EquationGenerator.formatLaTeXParenthesis(a, b);
-        initialRHS = EquationGenerator.formatLaTeXSide(c, d);
+        initialLHS = EquationGenerator.formatLaTeXParenthesis(a, b, 'lhs');
+        initialRHS = EquationGenerator.formatLaTeXSide(c, d, 'rhs');
 
         const netCoeff = a.sub(c);
         const intermediateConst = netCoeff.mul(S);
@@ -219,7 +261,10 @@ class EquationGenerator {
           lhsCoeff: a, lhsConst: ab,
           rhsCoeff: c, rhsConst: d,
           latex: `${EquationGenerator.formatLaTeXSide(a, ab)} = ${EquationGenerator.formatLaTeXSide(c, d)}`,
-          visualLaTeX: `\\begin{aligned} ${initialLHS} &= ${EquationGenerator.formatLaTeXSide(c, d)} \\\\ \\color{indigo}{${a.toLaTeX()} \\cdot x ${b.n < 0 ? '-' : '+'} ${Math.abs(a.toLaTeX())} \\cdot ${Math.abs(b.toLaTeX())}} &= ${EquationGenerator.formatLaTeXSide(c, d)} \\\\ ${EquationGenerator.formatLaTeXSide(a, ab)} &= ${EquationGenerator.formatLaTeXSide(c, d)} \\end{aligned}`
+          visualLaTeX: `\\begin{aligned} ${initialLHS} &= ${initialRHS} \\\\ ${a.n < 0 ? '-' : ''} \\htmlId{lhs-var}{\\htmlId{lhs-out-coeff}{${a.abs().toLaTeX()}} \\cdot \\htmlId{lhs-inner-var}{x}} ${ab.n < 0 ? '-' : '+'} \\htmlId{lhs-const}{\\htmlId{lhs-out-coeff2}{${a.abs().toLaTeX()}} \\cdot \\htmlId{lhs-inner-const}{${b.abs().toLaTeX()}}} &= ${initialRHS} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXTerm(a, 'x', true)}} ${EquationGenerator.formatLaTeXTerm(ab, '', false, 'lhs-const')} &= ${initialRHS} \\end{aligned}`,
+          distributeCoeff: a,
+          distributeInsideConst: b,
+          distributeOtherCoeff: new Fraction(0),
         });
 
         stepStates.push({
@@ -229,8 +274,13 @@ class EquationGenerator {
           lhsCoeff: netCoeff, lhsConst: ab,
           rhsCoeff: new Fraction(0), rhsConst: d,
           latex: `${EquationGenerator.formatLaTeXSide(netCoeff, ab)} = ${d.toLaTeX()}`,
-          visualLaTeX: `\\begin{aligned} ${EquationGenerator.formatLaTeXSide(a, ab)} &= ${EquationGenerator.formatLaTeXSide(c, d)} \\\\ ${EquationGenerator.formatLaTeXSide(a, ab)} \\color{indigo}{${EquationGenerator.formatLaTeXTerm(c.neg(), 'x', false)}} &= ${EquationGenerator.formatLaTeXSide(c, d)} \\color{indigo}{${EquationGenerator.formatLaTeXTerm(c.neg(), 'x', false)}} \\\\ ${EquationGenerator.formatLaTeXSide(netCoeff, ab)} &= ${d.toLaTeX()} \\end{aligned}`
+          visualLaTeX: `\\begin{aligned} \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXTerm(a, 'x', true)}} ${EquationGenerator.formatLaTeXTerm(ab, '', false, 'lhs-const')} &= ${initialRHS} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXTerm(a, 'x', true)}} ${EquationGenerator.formatLaTeXTerm(ab, '', false, 'lhs-const')} \\color{indigo}{${EquationGenerator.formatLaTeXTerm(c.neg(), 'x', false, 'add-lhs')}} &= \\htmlId{rhs-var}{${EquationGenerator.formatLaTeXTerm(c, 'x', true)}} ${EquationGenerator.formatLaTeXTerm(d, '', false, 'rhs-const')} \\color{indigo}{${EquationGenerator.formatLaTeXTerm(c.neg(), 'x', false, 'add-rhs')}} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(netCoeff, 0)}} ${EquationGenerator.formatLaTeXTerm(ab, '', false, 'lhs-const')} &= \\htmlId{rhs-const}{${d.toLaTeX()}} \\end{aligned}`,
+          originalLHSCoeff: a,
+          originalRHSCoeff: c,
         });
+
+        const LHS_move = EquationGenerator.formatLaTeXSide(netCoeff, ab, 'lhs');
+        const RHS_move = EquationGenerator.formatLaTeXSide(0, d, 'rhs');
 
         stepStates.push({
           stepNum: 4,
@@ -239,8 +289,13 @@ class EquationGenerator {
           lhsCoeff: netCoeff, lhsConst: new Fraction(0),
           rhsCoeff: new Fraction(0), rhsConst: intermediateConst,
           latex: `${EquationGenerator.formatLaTeXSide(netCoeff, 0)} = ${intermediateConst.toLaTeX()}`,
-          visualLaTeX: `\\begin{aligned} ${EquationGenerator.formatLaTeXSide(netCoeff, ab)} &= ${d.toLaTeX()} \\\\ ${EquationGenerator.formatLaTeXSide(netCoeff, ab)} \\color{indigo}{${ab.n < 0 ? '+' : '-'} ${Math.abs(ab.toLaTeX())}} &= ${d.toLaTeX()} \\color{indigo}{${ab.n < 0 ? '+' : '-'} ${Math.abs(ab.toLaTeX())}} \\\\ ${EquationGenerator.formatLaTeXSide(netCoeff, 0)} &= ${intermediateConst.toLaTeX()} \\end{aligned}`
+          visualLaTeX: `\\begin{aligned} ${LHS_move} &= ${RHS_move} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(netCoeff, 0)}} ${ab.n < 0 ? '-' : '+'} \\htmlId{lhs-const}{${ab.abs().toLaTeX()}} \\color{indigo}{${ab.n < 0 ? '+' : '-'} \\htmlId{add-lhs}{${ab.abs().toLaTeX()}}} &= \\htmlId{rhs-const}{${d.toLaTeX()}} \\color{indigo}{${ab.n < 0 ? '+' : '-'} \\htmlId{add-rhs}{${ab.abs().toLaTeX()}}} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(netCoeff, 0)}} &= \\htmlId{rhs-const}{${intermediateConst.toLaTeX()}} \\end{aligned}`,
+          originalLHSConst: ab,
+          originalRHSConst: d,
         });
+
+        const LHS_isolate = EquationGenerator.formatLaTeXSide(netCoeff, 0, 'lhs');
+        const RHS_isolate = EquationGenerator.formatLaTeXSide(0, intermediateConst, 'rhs');
 
         stepStates.push({
           stepNum: 5,
@@ -249,7 +304,9 @@ class EquationGenerator {
           lhsCoeff: new Fraction(1), lhsConst: new Fraction(0),
           rhsCoeff: new Fraction(0), rhsConst: S,
           latex: `x = ${S.toLaTeX()}`,
-          visualLaTeX: `\\begin{aligned} ${EquationGenerator.formatLaTeXSide(netCoeff, 0)} &= ${intermediateConst.toLaTeX()} \\\\ \\frac{${EquationGenerator.formatLaTeXSide(netCoeff, 0)}}{\\color{indigo}{${netCoeff.toLaTeX()}}} &= \\frac{${intermediateConst.toLaTeX()}}{\\color{indigo}{${netCoeff.toLaTeX()}}} \\\\ x &= ${S.toLaTeX()} \\end{aligned}`
+          visualLaTeX: `\\begin{aligned} ${LHS_isolate} &= ${RHS_isolate} \\\\ \\frac{${LHS_isolate}}{\\color{indigo}{\\htmlId{div-lhs}{${netCoeff.toLaTeX()}}}} &= \\frac{${RHS_isolate}}{\\color{indigo}{\\htmlId{div-rhs}{${netCoeff.toLaTeX()}}}} \\\\ \\htmlId{lhs-var}{x} &= \\htmlId{rhs-const}{${S.toLaTeX()}} \\end{aligned}`,
+          isolateCoeff: netCoeff,
+          isolateConst: intermediateConst,
         });
       } else {
         const a = EquationGenerator.randomVal(allowNegatives, allowFractions);
@@ -262,8 +319,8 @@ class EquationGenerator {
         const sumAC = a.add(c);
         const e = sumAC.sub(d).mul(S).add(b);
 
-        initialLHS = `${EquationGenerator.formatLaTeXTerm(a, 'x', true)}${EquationGenerator.formatLaTeXTerm(b, '', false)}${EquationGenerator.formatLaTeXTerm(c, 'x', false)}`;
-        initialRHS = EquationGenerator.formatLaTeXSide(d, e);
+        initialLHS = `${EquationGenerator.formatLaTeXTerm(a, 'x', true, 'lhs-var-1')}${EquationGenerator.formatLaTeXTerm(b, '', false, 'lhs-const')}${EquationGenerator.formatLaTeXTerm(c, 'x', false, 'lhs-var-2')}`;
+        initialRHS = EquationGenerator.formatLaTeXSide(d, e, 'rhs');
 
         const netCoeff = sumAC.sub(d);
         const intermediateConst = netCoeff.mul(S);
@@ -275,7 +332,9 @@ class EquationGenerator {
           lhsCoeff: sumAC, lhsConst: b,
           rhsCoeff: d, rhsConst: e,
           latex: `${EquationGenerator.formatLaTeXSide(sumAC, b)} = ${EquationGenerator.formatLaTeXSide(d, e)}`,
-          visualLaTeX: `\\begin{aligned} ${initialLHS} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ \\color{indigo}{${EquationGenerator.formatLaTeXTerm(a, 'x', true)}${EquationGenerator.formatLaTeXTerm(c, 'x', false)}} ${b.n < 0 ? '-' : '+'} ${Math.abs(b.toLaTeX())} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ ${EquationGenerator.formatLaTeXSide(sumAC, b)} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\end{aligned}`
+          visualLaTeX: `\\begin{aligned} ${initialLHS} &= ${initialRHS} \\\\ \\htmlId{lhs-var}{\\htmlId{lhs-var-1}{${EquationGenerator.formatLaTeXTerm(a, 'x', true)}} ${EquationGenerator.formatLaTeXTerm(c, 'x', false, 'lhs-var-2')}} ${EquationGenerator.formatLaTeXTerm(b, '', false, 'lhs-const')} &= ${initialRHS} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(sumAC, 0)}} ${EquationGenerator.formatLaTeXTerm(b, '', false, 'lhs-const')} &= ${initialRHS} \\end{aligned}`,
+          combineLHSCoeff1: a,
+          combineLHSCoeff2: c,
         });
 
         stepStates.push({
@@ -285,8 +344,13 @@ class EquationGenerator {
           lhsCoeff: netCoeff, lhsConst: b,
           rhsCoeff: new Fraction(0), rhsConst: e,
           latex: `${EquationGenerator.formatLaTeXSide(netCoeff, b)} = ${e.toLaTeX()}`,
-          visualLaTeX: `\\begin{aligned} ${EquationGenerator.formatLaTeXSide(sumAC, b)} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ ${EquationGenerator.formatLaTeXSide(sumAC, b)} \\color{indigo}{${EquationGenerator.formatLaTeXTerm(d.neg(), 'x', false)}} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\color{indigo}{${EquationGenerator.formatLaTeXTerm(d.neg(), 'x', false)}} \\\\ ${EquationGenerator.formatLaTeXSide(netCoeff, b)} &= ${e.toLaTeX()} \\end{aligned}`
+          visualLaTeX: `\\begin{aligned} \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(sumAC, 0)}} ${EquationGenerator.formatLaTeXTerm(b, '', false, 'lhs-const')} &= ${initialRHS} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(sumAC, 0)}} ${EquationGenerator.formatLaTeXTerm(b, '', false, 'lhs-const')} \\color{indigo}{${EquationGenerator.formatLaTeXTerm(d.neg(), 'x', false, 'add-lhs')}} &= \\htmlId{rhs-var}{${EquationGenerator.formatLaTeXTerm(d, 'x', true)}} ${EquationGenerator.formatLaTeXTerm(e, '', false, 'rhs-const')} \\color{indigo}{${EquationGenerator.formatLaTeXTerm(d.neg(), 'x', false, 'add-rhs')}} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(netCoeff, 0)}} ${EquationGenerator.formatLaTeXTerm(b, '', false, 'lhs-const')} &= \\htmlId{rhs-const}{${e.toLaTeX()}} \\end{aligned}`,
+          originalLHSCoeff: sumAC,
+          originalRHSCoeff: d,
         });
+
+        const LHS_move = EquationGenerator.formatLaTeXSide(netCoeff, b, 'lhs');
+        const RHS_move = EquationGenerator.formatLaTeXSide(0, e, 'rhs');
 
         stepStates.push({
           stepNum: 4,
@@ -295,8 +359,13 @@ class EquationGenerator {
           lhsCoeff: netCoeff, lhsConst: new Fraction(0),
           rhsCoeff: new Fraction(0), rhsConst: intermediateConst,
           latex: `${EquationGenerator.formatLaTeXSide(netCoeff, 0)} = ${intermediateConst.toLaTeX()}`,
-          visualLaTeX: `\\begin{aligned} ${EquationGenerator.formatLaTeXSide(netCoeff, b)} &= ${e.toLaTeX()} \\\\ ${EquationGenerator.formatLaTeXSide(netCoeff, b)} \\color{indigo}{${b.n < 0 ? '+' : '-'} ${Math.abs(b.toLaTeX())}} &= ${e.toLaTeX()} \\color{indigo}{${b.n < 0 ? '+' : '-'} ${Math.abs(b.toLaTeX())}} \\\\ ${EquationGenerator.formatLaTeXSide(netCoeff, 0)} &= ${intermediateConst.toLaTeX()} \\end{aligned}`
+          visualLaTeX: `\\begin{aligned} ${LHS_move} &= ${RHS_move} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(netCoeff, 0)}} ${b.n < 0 ? '-' : '+'} \\htmlId{lhs-const}{${b.abs().toLaTeX()}} \\color{indigo}{${b.n < 0 ? '+' : '-'} \\htmlId{add-lhs}{${b.abs().toLaTeX()}}} &= \\htmlId{rhs-const}{${e.toLaTeX()}} \\color{indigo}{${b.n < 0 ? '+' : '-'} \\htmlId{add-rhs}{${b.abs().toLaTeX()}}} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(netCoeff, 0)}} &= \\htmlId{rhs-const}{${intermediateConst.toLaTeX()}} \\end{aligned}`,
+          originalLHSConst: b,
+          originalRHSConst: e,
         });
+
+        const LHS_isolate = EquationGenerator.formatLaTeXSide(netCoeff, 0, 'lhs');
+        const RHS_isolate = EquationGenerator.formatLaTeXSide(0, intermediateConst, 'rhs');
 
         stepStates.push({
           stepNum: 5,
@@ -305,7 +374,9 @@ class EquationGenerator {
           lhsCoeff: new Fraction(1), lhsConst: new Fraction(0),
           rhsCoeff: new Fraction(0), rhsConst: S,
           latex: `x = ${S.toLaTeX()}`,
-          visualLaTeX: `\\begin{aligned} ${EquationGenerator.formatLaTeXSide(netCoeff, 0)} &= ${intermediateConst.toLaTeX()} \\\\ \\frac{${EquationGenerator.formatLaTeXSide(netCoeff, 0)}}{\\color{indigo}{${netCoeff.toLaTeX()}}} &= \\frac{${intermediateConst.toLaTeX()}}{\\color{indigo}{${netCoeff.toLaTeX()}}} \\\\ x &= ${S.toLaTeX()} \\end{aligned}`
+          visualLaTeX: `\\begin{aligned} ${LHS_isolate} &= ${RHS_isolate} \\\\ \\frac{${LHS_isolate}}{\\color{indigo}{\\htmlId{div-lhs}{${netCoeff.toLaTeX()}}}} &= \\frac{${RHS_isolate}}{\\color{indigo}{\\htmlId{div-rhs}{${netCoeff.toLaTeX()}}}} \\\\ \\htmlId{lhs-var}{x} &= \\htmlId{rhs-const}{${S.toLaTeX()}} \\end{aligned}`,
+          isolateCoeff: netCoeff,
+          isolateConst: intermediateConst,
         });
       }
     } else {
@@ -320,8 +391,8 @@ class EquationGenerator {
       const sumAC = a.add(c);
       const e = sumAC.sub(d).mul(S).add(ab);
 
-      initialLHS = `${EquationGenerator.formatLaTeXParenthesis(a, b)}${EquationGenerator.formatLaTeXTerm(c, 'x', false)}`;
-      initialRHS = EquationGenerator.formatLaTeXSide(d, e);
+      initialLHS = `${EquationGenerator.formatLaTeXParenthesis(a, b, 'lhs')} ${EquationGenerator.formatLaTeXTerm(c, 'x', false, 'lhs-other-var')}`;
+      initialRHS = EquationGenerator.formatLaTeXSide(d, e, 'rhs');
 
       const netCoeff = sumAC.sub(d);
       const intermediateConst = netCoeff.mul(S);
@@ -330,9 +401,15 @@ class EquationGenerator {
         stepNum: 1,
         type: 'distribute',
         description: 'Distribute the multiplication through the parenthesis.',
-        lhsCoeff: a, lhsConst: ab,
-        rhsCoeff: d, rhsConst: e,
-        visualLaTeX: `\\begin{aligned} ${initialLHS} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ \\color{indigo}{${a.toLaTeX()}\\cdot x ${b.n < 0 ? '-' : '+'} ${Math.abs(a.toLaTeX())}\\cdot ${Math.abs(b.toLaTeX())}} ${EquationGenerator.formatLaTeXTerm(c, 'x', false)} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ ${EquationGenerator.formatLaTeXTerm(a, 'x', true)}${EquationGenerator.formatLaTeXTerm(ab, '', false)}${EquationGenerator.formatLaTeXTerm(c, 'x', false)} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\end{aligned}`
+        lhsCoeff: sumAC,
+        lhsConst: ab,
+        rhsCoeff: d,
+        rhsConst: e,
+        latex: `${EquationGenerator.formatLaTeXTerm(a, 'x', true)}${EquationGenerator.formatLaTeXTerm(ab, '', false)}${EquationGenerator.formatLaTeXTerm(c, 'x', false)} = ${EquationGenerator.formatLaTeXSide(d, e)}`,
+        visualLaTeX: `\\begin{aligned} ${initialLHS} &= ${initialRHS} \\\\ ${a.n < 0 ? '-' : ''} \\htmlId{lhs-var}{\\htmlId{lhs-out-coeff}{${a.abs().toLaTeX()}} \\cdot \\htmlId{lhs-inner-var}{x}} ${ab.n < 0 ? '-' : '+'} \\htmlId{lhs-const}{\\htmlId{lhs-out-coeff2}{${a.abs().toLaTeX()}} \\cdot \\htmlId{lhs-inner-const}{${b.abs().toLaTeX()}}} ${EquationGenerator.formatLaTeXTerm(c, 'x', false, 'lhs-other-var')} &= ${initialRHS} \\\\ \\htmlId{lhs-var-1}{${EquationGenerator.formatLaTeXTerm(a, 'x', true)}} ${EquationGenerator.formatLaTeXTerm(ab, '', false, 'lhs-const')} \\htmlId{lhs-var-2}{${EquationGenerator.formatLaTeXTerm(c, 'x', false)}} &= ${initialRHS} \\end{aligned}`,
+        distributeCoeff: a,
+        distributeInsideConst: b,
+        distributeOtherCoeff: c,
       });
 
       stepStates.push({
@@ -342,7 +419,9 @@ class EquationGenerator {
         lhsCoeff: sumAC, lhsConst: ab,
         rhsCoeff: d, rhsConst: e,
         latex: `${EquationGenerator.formatLaTeXSide(sumAC, ab)} = ${EquationGenerator.formatLaTeXSide(d, e)}`,
-        visualLaTeX: `\\begin{aligned} ${EquationGenerator.formatLaTeXTerm(a, 'x', true)}${EquationGenerator.formatLaTeXTerm(ab, '', false)}${EquationGenerator.formatLaTeXTerm(c, 'x', false)} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ \\color{indigo}{${EquationGenerator.formatLaTeXTerm(a, 'x', true)}${EquationGenerator.formatLaTeXTerm(c, 'x', false)}} ${ab.n < 0 ? '-' : '+'} ${Math.abs(ab.toLaTeX())} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ ${EquationGenerator.formatLaTeXSide(sumAC, ab)} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\end{aligned}`
+        visualLaTeX: `\\begin{aligned} \\htmlId{lhs-var-1}{${EquationGenerator.formatLaTeXTerm(a, 'x', true)}} ${EquationGenerator.formatLaTeXTerm(ab, '', false, 'lhs-const')} \\htmlId{lhs-var-2}{${EquationGenerator.formatLaTeXTerm(c, 'x', false)}} &= ${initialRHS} \\\\ \\htmlId{lhs-var}{\\htmlId{lhs-var-1}{${EquationGenerator.formatLaTeXTerm(a, 'x', true)}} \\htmlId{lhs-var-2}{${EquationGenerator.formatLaTeXTerm(c, 'x', false)}}} ${EquationGenerator.formatLaTeXTerm(ab, '', false, 'lhs-const')} &= ${initialRHS} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(sumAC, 0)}} ${EquationGenerator.formatLaTeXTerm(ab, '', false, 'lhs-const')} &= ${initialRHS} \\end{aligned}`,
+        combineLHSCoeff1: a,
+        combineLHSCoeff2: c,
       });
 
       stepStates.push({
@@ -351,8 +430,14 @@ class EquationGenerator {
         description: 'Move all variables to the left side.',
         lhsCoeff: netCoeff, lhsConst: ab,
         rhsCoeff: new Fraction(0), rhsConst: e,
-        visualLaTeX: `\\begin{aligned} ${EquationGenerator.formatLaTeXSide(sumAC, ab)} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\\\ ${EquationGenerator.formatLaTeXSide(sumAC, ab)} \\color{indigo}{${EquationGenerator.formatLaTeXTerm(d.neg(), 'x', false)}} &= ${EquationGenerator.formatLaTeXSide(d, e)} \\color{indigo}{${EquationGenerator.formatLaTeXTerm(d.neg(), 'x', false)}} \\\\ ${EquationGenerator.formatLaTeXSide(netCoeff, ab)} &= ${e.toLaTeX()} \\end{aligned}`
+        latex: `${EquationGenerator.formatLaTeXSide(netCoeff, ab)} = ${e.toLaTeX()}`,
+        visualLaTeX: `\\begin{aligned} \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(sumAC, 0)}} ${EquationGenerator.formatLaTeXTerm(ab, '', false, 'lhs-const')} &= ${initialRHS} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(sumAC, 0)}} ${EquationGenerator.formatLaTeXTerm(ab, '', false, 'lhs-const')} \\color{indigo}{${EquationGenerator.formatLaTeXTerm(d.neg(), 'x', false, 'add-lhs')}} &= \\htmlId{rhs-var}{${EquationGenerator.formatLaTeXTerm(d, 'x', true)}} ${EquationGenerator.formatLaTeXTerm(e, '', false, 'rhs-const')} \\color{indigo}{${EquationGenerator.formatLaTeXTerm(d.neg(), 'x', false, 'add-rhs')}} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(netCoeff, 0)}} ${EquationGenerator.formatLaTeXTerm(ab, '', false, 'lhs-const')} &= \\htmlId{rhs-const}{${e.toLaTeX()}} \\end{aligned}`,
+        originalLHSCoeff: sumAC,
+        originalRHSCoeff: d,
       });
+
+      const LHS_move = EquationGenerator.formatLaTeXSide(netCoeff, ab, 'lhs');
+      const RHS_move = EquationGenerator.formatLaTeXSide(0, e, 'rhs');
 
       stepStates.push({
         stepNum: 4,
@@ -361,8 +446,13 @@ class EquationGenerator {
         lhsCoeff: netCoeff, lhsConst: new Fraction(0),
         rhsCoeff: new Fraction(0), rhsConst: intermediateConst,
         latex: `${EquationGenerator.formatLaTeXSide(netCoeff, 0)} = ${intermediateConst.toLaTeX()}`,
-        visualLaTeX: `\\begin{aligned} ${EquationGenerator.formatLaTeXSide(netCoeff, ab)} &= ${e.toLaTeX()} \\\\ ${EquationGenerator.formatLaTeXSide(netCoeff, ab)} \\color{indigo}{${ab.n < 0 ? '+' : '-'} ${Math.abs(ab.toLaTeX())}} &= ${e.toLaTeX()} \\color{indigo}{${ab.n < 0 ? '+' : '-'} ${Math.abs(ab.toLaTeX())}} \\\\ ${EquationGenerator.formatLaTeXSide(netCoeff, 0)} &= ${intermediateConst.toLaTeX()} \\end{aligned}`
+        visualLaTeX: `\\begin{aligned} ${LHS_move} &= ${RHS_move} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(netCoeff, 0)}} ${ab.n < 0 ? '-' : '+'} \\htmlId{lhs-const}{${ab.abs().toLaTeX()}} \\color{indigo}{${ab.n < 0 ? '+' : '-'} \\htmlId{add-lhs}{${ab.abs().toLaTeX()}}} &= \\htmlId{rhs-const}{${e.toLaTeX()}} \\color{indigo}{${ab.n < 0 ? '+' : '-'} \\htmlId{add-rhs}{${ab.abs().toLaTeX()}}} \\\\ \\htmlId{lhs-var}{${EquationGenerator.formatLaTeXSide(netCoeff, 0)}} &= \\htmlId{rhs-const}{${intermediateConst.toLaTeX()}} \\end{aligned}`,
+        originalLHSConst: ab,
+        originalRHSConst: e,
       });
+
+      const LHS_isolate = EquationGenerator.formatLaTeXSide(netCoeff, 0, 'lhs');
+      const RHS_isolate = EquationGenerator.formatLaTeXSide(0, intermediateConst, 'rhs');
 
       stepStates.push({
         stepNum: 5,
@@ -371,7 +461,9 @@ class EquationGenerator {
         lhsCoeff: new Fraction(1), lhsConst: new Fraction(0),
         rhsCoeff: new Fraction(0), rhsConst: S,
         latex: `x = ${S.toLaTeX()}`,
-        visualLaTeX: `\\begin{aligned} ${EquationGenerator.formatLaTeXSide(netCoeff, 0)} &= ${intermediateConst.toLaTeX()} \\\\ \\frac{${EquationGenerator.formatLaTeXSide(netCoeff, 0)}}{\\color{indigo}{${netCoeff.toLaTeX()}}} &= \\frac{${intermediateConst.toLaTeX()}}{\\color{indigo}{${netCoeff.toLaTeX()}}} \\\\ x &= ${S.toLaTeX()} \\end{aligned}`
+        visualLaTeX: `\\begin{aligned} ${LHS_isolate} &= ${RHS_isolate} \\\\ \\frac{${LHS_isolate}}{\\color{indigo}{\\htmlId{div-lhs}{${netCoeff.toLaTeX()}}}} &= \\frac{${RHS_isolate}}{\\color{indigo}{\\htmlId{div-rhs}{${netCoeff.toLaTeX()}}}} \\\\ \\htmlId{lhs-var}{x} &= \\htmlId{rhs-const}{${S.toLaTeX()}} \\end{aligned}`,
+        isolateCoeff: netCoeff,
+        isolateConst: intermediateConst,
       });
     }
 
@@ -409,7 +501,45 @@ class EquationGenerator {
   }
 
   static parseLinearExpression(str) {
+    // 1. Normalize unicode minus sign (often copied from KaTeX or web elements)
+    str = str.replace(/\u2212/g, '-');
+    
+    // 2. Clean up LaTeX formatting (e.g. \frac{a}{b}, \textcolor, \color, \cdot)
+    str = str.replace(/\\textcolor\s*\{[^{}]*\}\s*\{([^{}]+)\}/g, '$1');
+    
+    // Replace LaTeX \frac{num}{den} with normalized sign bubbling
+    str = str.replace(/\\frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}/g, (match, num, den) => {
+      num = num.trim();
+      den = den.trim();
+      if (num.startsWith('+')) num = num.substring(1).trim();
+      if (den.startsWith('+')) den = den.substring(1).trim();
+      let isNeg = false;
+      if (num.startsWith('-')) {
+        isNeg = !isNeg;
+        num = num.substring(1).trim();
+      }
+      if (den.startsWith('-')) {
+        isNeg = !isNeg;
+        den = den.substring(1).trim();
+      }
+      return (isNeg ? '-' : '') + num + '/' + den;
+    });
+
+    str = str.replace(/\\cdot/g, '');
+    str = str.replace(/\\color\s*\{[^{}]*\}/g, '');
+    str = str.replace(/[{}]/g, '');
+    str = str.replace(/\\/g, '');
+
+    // 3. Remove spaces and multiplication symbols
     str = str.replace(/\s+/g, '').replace(/\*/g, '');
+
+    // 4. Bubble signs for plain division (e.g. 5/-2, -x/-2, -78/-13)
+    str = str.replace(/([+-]?)([0-9x]+)\/([+-])([0-9]+)/gi, (match, numSign, numVal, denSign, denVal) => {
+      let isNeg = false;
+      if (numSign === '-') isNeg = !isNeg;
+      if (denSign === '-') isNeg = !isNeg;
+      return (isNeg ? '-' : '+') + numVal + '/' + denVal;
+    });
     
     const terms = str.split(/(?=[+-])/);
     
@@ -468,6 +598,144 @@ class EquationGenerator {
     const expectedNetConst = expectedState.lhsConst.sub(expectedState.rhsConst);
 
     if (!userNetCoeff.equals(expectedNetCoeff) || !userNetConst.equals(expectedNetConst)) {
+      // Algebraic equivalence failed. Generate detailed diagnostics.
+      if (expectedState.type === 'distribute') {
+        const coeff = expectedState.distributeCoeff;
+        const insideConst = expectedState.distributeInsideConst;
+        const otherCoeff = expectedState.distributeOtherCoeff;
+        
+        if (coeff && insideConst) {
+          const expectedConst = coeff.mul(insideConst);
+
+          // Check if they forgot to multiply the constant
+          if (userLHS.constant.equals(insideConst) || userLHS.constant.equals(insideConst.neg())) {
+            return {
+              valid: false,
+              errorMsg: `It looks like you forgot to multiply the constant inside the parentheses (${insideConst.toString()}) by the outside coefficient (${coeff.toString()}). Remember to distribute the outside number to both terms inside.`
+            };
+          }
+
+          // Check if they had a sign error on the constant
+          if (userLHS.constant.equals(expectedConst.neg())) {
+            return {
+              valid: false,
+              errorMsg: `Watch your signs! Multiplying ${coeff.toString()} by ${insideConst.toString()} should result in ${expectedConst.toString()}.`
+            };
+          }
+
+          // Check if they forgot to distribute the coefficient to the variable term
+          const userDistCoeff = userLHS.coeff.sub(otherCoeff || 0);
+          if ((userDistCoeff.equals(1) || userDistCoeff.equals(-1)) && !coeff.equals(1) && !coeff.equals(-1)) {
+            return {
+              valid: false,
+              errorMsg: `It looks like you forgot to multiply the variable term 'x' by the outside coefficient (${coeff.toString()}). Remember to distribute to both terms.`
+            };
+          }
+
+          // Check if they had a sign error on the variable term
+          if (userDistCoeff.equals(coeff.neg())) {
+            return {
+              valid: false,
+              errorMsg: `Watch your signs on the variable term! Multiplying ${coeff.toString()} by 'x' should result in ${coeff.toString()}x.`
+            };
+          }
+        }
+      }
+
+      if (expectedState.type === 'combine') {
+        const c1 = expectedState.combineLHSCoeff1;
+        const c2 = expectedState.combineLHSCoeff2;
+        if (c1 && c2) {
+          // If they wrote c1 instead of combining them
+          if (userLHS.coeff.equals(c1) || userLHS.coeff.equals(c2)) {
+            return {
+              valid: false,
+              errorMsg: `It looks like you didn't add the like terms ${c1.toString()}x and ${c2.toString()}x on the left side.`
+            };
+          }
+          // If they subtracted them instead of adding them (or vice-versa)
+          if (userLHS.coeff.equals(c1.sub(c2)) || userLHS.coeff.equals(c2.sub(c1))) {
+            return {
+              valid: false,
+              errorMsg: `Check your signs when combining the x terms: ${c1.toString()}x and ${c2.toString()}x.`
+            };
+          }
+        }
+      }
+
+      if (expectedState.type === 'move_variables') {
+        const origL = expectedState.originalLHSCoeff;
+        const origR = expectedState.originalRHSCoeff;
+        if (origL && origR) {
+          // Expected is origL - origR. If they added origR instead (origL + origR):
+          if (userLHS.coeff.equals(origL.add(origR))) {
+            return {
+              valid: false,
+              errorMsg: `Remember to change the sign of a term when moving it to the other side. Since we had ${origR.toString()}x on the right, we should subtract it from both sides.`
+            };
+          }
+        }
+      }
+
+      if (expectedState.type === 'move_constants') {
+        const origL = expectedState.originalLHSConst;
+        const origR = expectedState.originalRHSConst;
+        if (origL && origR) {
+          // Expected is origR - origL. If they added origL instead (origR + origL):
+          const userRHSConst = userRHS.constant;
+          if (userRHSConst.equals(origR.add(origL))) {
+            return {
+              valid: false,
+              errorMsg: `Remember to change the sign of a term when moving it to the other side. Since we had ${origL.toString()} on the left, we should subtract it from both sides.`
+            };
+          }
+        }
+      }
+
+      if (expectedState.type === 'isolate') {
+        if (userNetConst.mul(expectedNetCoeff).equals(expectedNetConst.mul(userNetCoeff))) {
+          return { valid: false, errorMsg: "The final equation must isolate 'x' on the left (e.g. x = 5)." };
+        }
+
+        const coeff = expectedState.isolateCoeff;
+        const constVal = expectedState.isolateConst;
+        const addConst = expectedState.isolateAddConst;
+
+        if (addConst && constVal) {
+          // x + addConst = constVal. If they did targetConst + addConst instead of subtracting:
+          if (userRHS.constant.equals(constVal.add(addConst))) {
+            return {
+              valid: false,
+              errorMsg: `Remember to change the sign of the constant when moving it to the other side. Since we had ${addConst.toString()} on the left, we should subtract it from both sides.`
+            };
+          }
+        }
+
+        if (coeff && constVal) {
+          // If they multiplied instead of dividing:
+          if (userRHS.constant.equals(constVal.mul(coeff))) {
+            return {
+              valid: false,
+              errorMsg: `It looks like you multiplied instead of dividing. To isolate 'x', divide both sides by the coefficient ${coeff.toString()}.`
+            };
+          }
+          // If they subtracted/added instead of dividing:
+          if (userRHS.constant.equals(constVal.sub(coeff)) || userRHS.constant.equals(constVal.add(coeff))) {
+            return {
+              valid: false,
+              errorMsg: `To isolate 'x', you must divide by the coefficient ${coeff.toString()}, not subtract it.`
+            };
+          }
+          // If they divided the coefficient by the constant instead (flipped fraction):
+          if (userRHS.constant.equals(coeff.div(constVal))) {
+            return {
+              valid: false,
+              errorMsg: `Check your division: you should divide the right-side constant (${constVal.toString()}) by the coefficient (${coeff.toString()}), not the other way around.`
+            };
+          }
+        }
+      }
+
       return { valid: false, errorMsg: "This equation is not algebraically equivalent to the expected step." };
     }
 

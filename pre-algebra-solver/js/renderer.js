@@ -12,7 +12,8 @@ class MathRenderer {
       }
       katex.render(latex, element, {
         throwOnError: false,
-        displayMode: displayMode
+        displayMode: displayMode,
+        trust: true
       });
     } catch (e) {
       console.error('KaTeX rendering error:', e);
