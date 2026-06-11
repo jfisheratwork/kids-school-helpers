@@ -377,6 +377,29 @@ class EquationGenerator {
       });
     }
 
+    // Automatically generate animationFrames from visualLaTeX for each step
+    stepStates.forEach(step => {
+      // Replace invalid \color{indigo} with \textcolor{#4f46e5} for KaTeX compatibility
+      step.visualLaTeX = step.visualLaTeX.replace(/\\color{indigo}/g, '\\textcolor{#4f46e5}');
+
+      let cleaned = step.visualLaTeX
+        .replace('\\begin{aligned}', '')
+        .replace('\\end{aligned}', '')
+        .trim();
+
+      let rawFrames = cleaned.split('\\\\');
+
+      step.animationFrames = rawFrames.map(frame => {
+        let f = frame.trim();
+        if (f.endsWith('\\\\')) {
+          f = f.slice(0, -2);
+        }
+        // Replace alignment operator '&=' with '=' for clean display
+        f = f.replace(/&=/g, '=');
+        return f.trim();
+      }).filter(f => f.length > 0);
+    });
+
     return {
       initialLHS,
       initialRHS,
