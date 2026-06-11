@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pre-Algebra Solver</title>
+    <!-- Tailwind CSS Release Notes: https://github.com/tailwindlabs/tailwindcss/releases/tag/v3.4.4 -->
+    <script src="https://cdn.tailwindcss.com?version=3.4.4"></script>
+    
+    <!-- KaTeX Release Notes: https://github.com/KaTeX/KaTeX/releases/tag/v0.16.10 -->
+    <link rel="stylesheet" href="lib/katex/katex.min.css">
+    <!-- Load KaTeX synchronously to prevent race conditions during page rendering -->
+    <script src="lib/katex/katex.min.js"></script>
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              primary: '#6366f1',
+              secondary: '#4f46e5',
+            }
+          }
+        }
+      }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      @media print {
+        /* Hide all interface elements not meant for physical paper */
+        nav, 
+        details, 
+        .no-print, 
+        button,
+        input,
+        select,
+        #dev-steps-panel {
+          display: none !important;
+        }
+
+        body {
+          background: white !important;
+          color: black !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+
+        main {
+          margin-top: 0 !important;
+          padding: 0 !important;
+          max-width: 100% !important;
+        }
+
+        /* Format worksheet page to Letter dimensions */
+        .worksheet-page {
+          border: none !important;
+          box-shadow: none !important;
+          width: 8.5in !important;
+          height: 10.5in !important;
+          padding: 0.5in !important;
+          margin: 0 auto !important;
+          page-break-after: always !important;
+        }
+
+        #worksheet-key-page {
+          page-break-before: always !important;
+        }
+      }
+
+      /* Screen styling to mimic Letter paper size */
+      @media screen {
+        .worksheet-page {
+          width: 8.5in;
+          min-height: 11in;
+          max-width: 100%;
+        }
+      }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm px-6 py-4 flex items-center justify-between no-print">
+        <div class="flex items-center space-x-4">
+            <a href="../" class="text-gray-500 hover:text-gray-700">&larr; Hub</a>
+            <h1 class="text-xl font-bold text-primary">Pre-Algebra Solver</h1>
+        </div>
+        <div class="flex space-x-2">
+            <button id="btn-mode-solver" class="px-4 py-2 rounded-md bg-primary text-white font-medium hover:bg-secondary transition">Solver</button>
+            <button id="btn-mode-generator" class="px-4 py-2 rounded-md bg-white text-gray-700 border border-gray-300 font-medium hover:bg-gray-50 transition">Generator</button>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="max-w-6xl mx-auto mt-8 p-4 space-y-6">
+        
+        <!-- Collapsible Standard Steps Drawer -->
+        <details class="bg-indigo-50 border border-indigo-100 rounded-xl overflow-hidden group no-print">
+            <summary class="flex items-center justify-between p-4 font-semibold text-indigo-900 cursor-pointer hover:bg-indigo-100/50 transition select-none list-none">
+                <span class="flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                    <span>Standard Pre-Algebra Solving Steps</span>
+                </span>
+                <span class="transition-transform duration-200 group-open:rotate-180">
+                    <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </span>
+            </summary>
+            <div class="p-6 bg-white border-t border-indigo-100/50 text-sm text-gray-700 space-y-3">
+                <ol class="list-decimal list-inside space-y-2.5 font-medium text-gray-800">
+                    <li><span class="font-bold text-indigo-600">Distribute</span> to eliminate parentheses.</li>
+                    <li><span class="font-bold text-indigo-600">Combine like terms</span> on each side of the equation.</li>
+                    <li>Use <span class="font-bold text-indigo-600">addition or subtraction</span> to move all variable terms to one side.</li>
+                    <li>Use <span class="font-bold text-indigo-600">addition or subtraction</span> to move all constant terms to the opposite side.</li>
+                    <li>Use <span class="font-bold text-indigo-600">multiplication or division</span> to isolate the variable.</li>
+                </ol>
+            </div>
+        </details>
+
+        <!-- Solver Mode Layout Container -->
+        <div id="mode-solver-container" class="space-y-6">
+            <!-- Configuration Panel -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 no-print">
+                <h2 class="text-lg font-bold text-gray-800 mb-4">Equation Parameters</h2>
+                <div class="flex flex-col md:flex-row md:items-center md:space-x-8 space-y-4 md:space-y-0 mb-6">
+                    <div class="w-full md:w-64">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Steps Required (1-5)</label>
+                        <select id="config-steps" class="w-full border border-gray-300 rounded-md p-2 focus:ring-primary focus:border-primary">
+                            <option value="1">1 Step</option>
+                            <option value="2">2 Steps</option>
+                            <option value="3" selected>3 Steps</option>
+                            <option value="4">4 Steps</option>
+                            <option value="5">5 Steps</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-wrap gap-6 items-center pt-5">
+                        <label class="flex items-center space-x-2 text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="checkbox" id="config-negatives" checked class="rounded text-primary focus:ring-primary">
+                            <span>Negatives</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="checkbox" id="config-fractions" class="rounded text-primary focus:ring-primary">
+                            <span>Fractions</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="checkbox" id="config-parenthesis" checked class="rounded text-primary focus:ring-primary">
+                            <span>Parenthesis</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="checkbox" id="config-show-key" class="rounded text-primary focus:ring-primary">
+                            <span class="text-indigo-600 font-semibold">Show Developer Key</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-gray-100">
+                    <button id="btn-generate" class="w-full sm:w-auto bg-primary text-white font-semibold py-2.5 px-6 rounded-md hover:bg-secondary transition shadow-sm">
+                        Generate Equation
+                    </button>
+                    <div class="text-sm font-medium text-indigo-600 hidden" id="dev-solution-display">
+                        <!-- Solution display -->
+                    </div>
+                </div>
+                <!-- Developer Answers Key (Collapsible) -->
+                <div class="mt-4 pt-4 border-t border-gray-100 hidden" id="dev-steps-panel">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Developer Key (Expected Steps)</h3>
+                    <div id="dev-steps-list" class="space-y-1 text-sm font-mono text-gray-600"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Left/Center Column: History and Active Input -->
+                <div class="md:col-span-2 space-y-6 flex flex-col">
+                    <!-- History Container -->
+                    <div id="history-container" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-h-[200px]">
+                        <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">History</h2>
+                        <ul id="history-list" class="space-y-3 text-lg">
+                            <li class="text-gray-400 italic text-sm">No steps recorded yet.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Active Input Container -->
+                    <div id="active-input-container" class="bg-white rounded-xl shadow-md border-l-4 border-primary p-6 relative flex-grow">
+                        <h2 class="text-sm font-semibold text-primary uppercase tracking-wider mb-4">Current Step</h2>
+                        <div class="text-center mb-6">
+                            <!-- LaTeX will render here -->
+                            <div id="current-equation-display" class="text-2xl font-medium tracking-wide min-h-[3rem] flex items-center justify-center select-none"></div>
+                        </div>
+                        <div class="relative">
+                            <input type="text" id="step-input" placeholder="Type your next step here... (Press Tab for hint)" 
+                                class="w-full text-center text-xl p-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-mono" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Hint System Container -->
+                <div class="md:col-span-1">
+                    <div id="hint-system-container" class="bg-indigo-50 rounded-xl shadow-sm border border-indigo-100 p-6 sticky top-8 transition-all duration-300">
+                        <div class="flex items-center space-x-2 mb-4">
+                            <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <h2 class="text-sm font-bold text-indigo-800 uppercase tracking-wider">Objectives & Hints</h2>
+                        </div>
+                        <div id="hint-content" class="text-indigo-900 space-y-4 text-sm leading-relaxed">
+                            <!-- Hints loaded dynamically -->
+                        </div>
+                        <!-- Visual Explanation Container -->
+                        <div id="visual-explanation-container" class="mt-6 pt-6 border-t border-indigo-200 hidden opacity-0 transition-all duration-500">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-xs font-bold text-indigo-500 uppercase tracking-wider">Visual Explanation</h3>
+                                <div class="flex items-center space-x-1.5 text-[10px] text-indigo-700 font-semibold bg-white border border-indigo-100 rounded-md px-2 py-1 shadow-sm">
+                                    <span>Delay:</span>
+                                    <input type="range" id="anim-speed" min="0.5" max="3" step="0.1" value="1.2" class="w-12 h-1 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-primary">
+                                    <span id="anim-speed-display" class="w-7 text-right">1.2s</span>
+                                </div>
+                            </div>
+                            <div id="visual-explanation-display" class="bg-white rounded-lg p-4 shadow-inner text-center overflow-x-auto min-h-[4.5rem] flex items-center justify-center"></div>
+                            <!-- Playback Controls -->
+                            <div class="flex items-center justify-center space-x-2 mt-3 text-xs">
+                                <button id="btn-anim-prev" class="px-2.5 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded font-semibold transition">&larr; Back</button>
+                                <button id="btn-anim-play" class="px-3.5 py-1 bg-primary hover:bg-secondary text-white rounded font-bold transition">Pause</button>
+                                <button id="btn-anim-next" class="px-2.5 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded font-semibold transition">Next &rarr;</button>
+                                <span id="anim-frame-counter" class="text-indigo-600 font-mono font-bold bg-indigo-100/50 rounded-md px-2 py-0.5">1/3</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Worksheet Generator Mode Layout (Hidden by Default) -->
+        <div id="mode-generator-container" class="hidden space-y-6">
+            <!-- Generator Configuration Panel -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 no-print">
+                <h2 class="text-lg font-bold text-gray-800 mb-4">Worksheet Parameters</h2>
+                <div class="flex flex-col md:flex-row md:items-center md:space-x-8 space-y-4 md:space-y-0 mb-6">
+                    <div class="w-full md:w-64">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Number of Problems</label>
+                        <select id="gen-count" class="w-full border border-gray-300 rounded-md p-2 focus:ring-primary focus:border-primary">
+                            <option value="6">6 Problems</option>
+                            <option value="8">8 Problems</option>
+                            <option value="12" selected>12 Problems</option>
+                            <option value="16">16 Problems</option>
+                        </select>
+                    </div>
+                    <div class="w-full md:w-64">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Steps Required (1-5)</label>
+                        <select id="gen-steps" class="w-full border border-gray-300 rounded-md p-2 focus:ring-primary focus:border-primary">
+                            <option value="1">1 Step</option>
+                            <option value="2">2 Steps</option>
+                            <option value="3" selected>3 Steps</option>
+                            <option value="4">4 Steps</option>
+                            <option value="5">5 Steps</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-wrap gap-6 items-center pt-5">
+                        <label class="flex items-center space-x-2 text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="checkbox" id="gen-negatives" checked class="rounded text-primary focus:ring-primary">
+                            <span>Negatives</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="checkbox" id="gen-fractions" class="rounded text-primary focus:ring-primary">
+                            <span>Fractions</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="checkbox" id="gen-parenthesis" checked class="rounded text-primary focus:ring-primary">
+                            <span>Parenthesis</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="checkbox" id="gen-show-key" checked class="rounded text-primary focus:ring-primary">
+                            <span class="text-indigo-600 font-semibold">Include Answer Key</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row sm:items-center gap-4 pt-4 border-t border-gray-100">
+                    <button id="btn-generate-sheet" class="w-full sm:w-auto bg-primary text-white font-semibold py-2.5 px-6 rounded-md hover:bg-secondary transition shadow-sm">
+                        Generate Worksheet
+                    </button>
+                    <button id="btn-print-sheet" class="w-full sm:w-auto bg-white text-gray-700 border border-gray-300 font-semibold py-2.5 px-6 rounded-md hover:bg-gray-50 transition shadow-sm">
+                        Print Worksheet
+                    </button>
+                </div>
+            </div>
+
+            <!-- Printable Worksheet Document Wrapper -->
+            <div id="worksheet-document" class="space-y-8">
+                <!-- Page 1: Problems Worksheet -->
+                <div class="worksheet-page bg-white rounded-xl shadow-sm border border-gray-200 p-8 mx-auto font-sans relative">
+                    <!-- School Header -->
+                    <div class="border-b-2 border-gray-900 pb-4 mb-6 flex justify-between items-end">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">Pre-Algebra Worksheet</h2>
+                            <p class="text-xs text-gray-500 mt-1">Topic: Multi-Step Linear Equations</p>
+                        </div>
+                        <div class="text-right text-sm text-gray-700 space-y-1">
+                            <p>Name: ________________________</p>
+                            <p>Date: ________________________</p>
+                        </div>
+                    </div>
+
+                    <!-- Equations Grid -->
+                    <div id="worksheet-grid" class="grid grid-cols-2 gap-x-8 gap-y-10 min-h-[7.5in]">
+                        <!-- Dynamic cells injected here -->
+                    </div>
+                </div>
+
+                <!-- Page 2: Answer Key Worksheet -->
+                <div id="worksheet-key-page" class="worksheet-page bg-white rounded-xl shadow-sm border border-gray-200 p-8 mx-auto font-sans relative">
+                    <!-- School Header -->
+                    <div class="border-b-2 border-gray-900 pb-4 mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Pre-Algebra Worksheet - Answer Key</h2>
+                        <p class="text-xs text-gray-500 mt-1">Topic: Multi-Step Linear Equations (Solutions)</p>
+                    </div>
+
+                    <!-- Answers Grid -->
+                    <div id="worksheet-key-grid" class="grid grid-cols-2 gap-x-8 gap-y-6">
+                        <!-- Dynamic answers injected here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Tooltip Element -->
+    <div id="custom-tooltip" class="absolute z-50 bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg pointer-events-none opacity-0 transition-opacity duration-200 max-w-xs no-print"></div>
+
+    <!-- Project Scripts -->
+    <script src="js/fraction.js?v=1.0.1"></script>
+    <script src="js/generator.js?v=1.0.1"></script>
+    <script src="js/renderer.js?v=1.0.1"></script>
+    <script>
+      let currentEquation = null;
+      let currentStepIdx = 0;
+      let hintStepIdx = 0;
+      let solveSessionId = 0;
+
+      // Animation Player State
+      let animInterval = null;
+      let animFrames = [];
+      let animIndex = 0;
+      let animPlaying = false;
+
+      function generateNew() {
+        solveSessionId++;
+        const steps = parseInt(document.getElementById('config-steps').value, 10);
+        const allowNegatives = document.getElementById('config-negatives').checked;
+        const allowFractions = document.getElementById('config-fractions').checked;
+        const allowParenthesis = document.getElementById('config-parenthesis').checked;
+
+        currentEquation = EquationGenerator.generate({
+          steps,
+          allowNegatives,
+          allowFractions,
+          allowParenthesis
+        });
+
+        currentStepIdx = 0;
+        hintStepIdx = 0;
+        
+        // Render initial equation
+        const equationLaTeX = `${currentEquation.initialLHS} = ${currentEquation.initialRHS}`;
+        const displayElem = document.getElementById('current-equation-display');
+        MathRenderer.renderBlock(equationLaTeX, displayElem);
+        setTimeout(setupOperatorTooltips, 50);
+
+        // Clear history
+        const historyList = document.getElementById('history-list');
+        historyList.innerHTML = '<li class="text-gray-400 italic text-sm">No steps recorded yet.</li>';
+
+        // Setup Hints objectives
+        updateHints();
+        hideVisualExplanation();
+
+        // Show dev solution
+        document.getElementById('dev-solution-display').textContent = `Solution: x = ${currentEquation.solution.toString()}`;
+        
+        // Render dev steps list
+        const devList = document.getElementById('dev-steps-list');
+        devList.innerHTML = '';
+        currentEquation.steps.forEach((s, idx) => {
+          const li = document.createElement('div');
+          li.textContent = `Step ${idx + 1} (${s.type}): ${s.latex}`;
+          devList.appendChild(li);
+        });
+
+        updateDevKeyVisibility();
+
+        // Clear input
+        const inputElem = document.getElementById('step-input');
+        inputElem.value = '';
+        inputElem.classList.remove('border-green-500', 'border-red-500', 'focus:border-green-500', 'focus:border-red-500');
+        inputElem.disabled = false;
+        inputElem.placeholder = "Type your next step here... (Press Tab for hint)";
+      }
+
+      function updateHints() {
+        const hintContent = document.getElementById('hint-content');
+        if (!currentEquation || currentStepIdx >= currentEquation.steps.length) {
+          hintContent.innerHTML = '<p class="text-green-600 font-medium">Equation Solved! Great job!</p>';
+          return;
+        }
+        const nextStep = currentEquation.steps[currentStepIdx];
+        
+        let objective = '';
+        let hint = '';
+        switch (nextStep.type) {
+          case 'distribute':
+            objective = 'Step 1: Distribute';
+            hint = 'Multiply the term outside the parentheses with all terms inside the parentheses.';
+            break;
+          case 'combine':
+            objective = 'Step 2: Combine Like Terms';
+            hint = 'Combine matching variable terms and matching constant terms on each side.';
+            break;
+          case 'move_variables':
+            objective = 'Step 3: Move Variables';
+            hint = 'Add or subtract variable terms to move them all to the left-hand side.';
+            break;
+          case 'move_constants':
+            objective = 'Step 4: Move Constants';
+            hint = 'Add or subtract constants to move them all to the right-hand side.';
+            break;
+          case 'isolate':
+            objective = 'Step 5: Isolate Variable';
+            hint = 'Divide both sides by the coefficient of x to find the final value.';
+            break;
+        }
+        hintContent.innerHTML = `
+          <p class="font-bold text-indigo-900">${objective}</p>
+          <p class="mt-2 text-indigo-700">${hint}</p>
+        `;
+      }
+
+      function updateDevKeyVisibility() {
+        const showKey = document.getElementById('config-show-key').checked;
+        const devPanel = document.getElementById('dev-steps-panel');
+        const solutionDisplay = document.getElementById('dev-solution-display');
+        
+        if (showKey) {
+          devPanel.classList.remove('hidden');
+          solutionDisplay.classList.remove('hidden');
+        } else {
+          devPanel.classList.add('hidden');
+          solutionDisplay.classList.add('hidden');
+        }
+      }
+
+      // Visual Explanation Player
+      function playAnimation(frames, autoplay = false) {
+        if (!frames || frames.length === 0) return;
+        animFrames = frames;
+        animIndex = 0;
+        animPlaying = autoplay;
+        
+        document.getElementById('btn-anim-play').textContent = animPlaying ? "Pause" : "Play";
+        showFrame(animIndex);
+        if (animInterval) clearInterval(animInterval);
+        if (animPlaying) {
+          startAnimTimer();
+        }
+      }
+
+      function showFrame(index) {
+        const display = document.getElementById('visual-explanation-display');
+        const counter = document.getElementById('anim-frame-counter');
+        
+        MathRenderer.renderBlock(animFrames[index], display);
+        counter.textContent = `${index + 1}/${animFrames.length}`;
+      }
+
+      function startAnimTimer() {
+        if (animInterval) clearInterval(animInterval);
+        const speedSeconds = parseFloat(document.getElementById('anim-speed').value);
+        document.getElementById('anim-speed-display').textContent = `${speedSeconds.toFixed(1)}s`;
+        
+        animInterval = setInterval(() => {
+          if (!animPlaying) return;
+          animIndex = (animIndex + 1) % animFrames.length;
+          showFrame(animIndex);
+        }, speedSeconds * 1000);
+      }
+
+      function triggerVisualExplanation(stepIdx = currentStepIdx, autoplay = false) {
+        if (!currentEquation || stepIdx >= currentEquation.steps.length) return;
+        const targetStep = currentEquation.steps[stepIdx];
+        if (!targetStep || !targetStep.animationFrames) return;
+
+        const explanationContainer = document.getElementById('visual-explanation-container');
+        const hintContainer = document.getElementById('hint-system-container');
+
+        // Start animation playback
+        playAnimation(targetStep.animationFrames, autoplay);
+
+        // Show visual explanation box
+        explanationContainer.classList.remove('hidden');
+        setTimeout(() => {
+          explanationContainer.classList.remove('opacity-0');
+        }, 50);
+
+        // Visual pulse feedback on panel
+        hintContainer.classList.add('ring-4', 'ring-indigo-300', 'border-indigo-400');
+        setTimeout(() => {
+          hintContainer.classList.remove('ring-4', 'ring-indigo-300', 'border-indigo-400');
+        }, 1000);
+      }
+
+      function hideVisualExplanation() {
+        if (animInterval) clearInterval(animInterval);
+        animPlaying = false;
+        const explanationContainer = document.getElementById('visual-explanation-container');
+        explanationContainer.classList.add('opacity-0');
+        setTimeout(() => {
+          explanationContainer.classList.add('hidden');
+        }, 500);
+      }
+
+      async function autoSolve() {
+        const sessionId = solveSessionId;
+        const inputElem = document.getElementById('step-input');
+        inputElem.disabled = true;
+
+        while (currentEquation && currentStepIdx < currentEquation.steps.length) {
+          if (sessionId !== solveSessionId) break;
+          const nextStep = currentEquation.steps[currentStepIdx];
+
+          // 1. Show the step in the visual explanation box with autoplay enabled
+          triggerVisualExplanation(currentStepIdx, true);
+
+          // 2. Wait for a short duration to let the user see the animation (e.g. 2.5 seconds)
+          await new Promise(resolve => setTimeout(resolve, 2500));
+          if (sessionId !== solveSessionId) break;
+
+          // 3. Append the completed step to history
+          const historyList = document.getElementById('history-list');
+          if (currentStepIdx === 0) {
+            historyList.innerHTML = '';
+          }
+
+          const newStepLi = document.createElement('li');
+          newStepLi.className = 'flex items-center justify-between py-2 border-b border-gray-100 last:border-0';
+          newStepLi.innerHTML = `
+            <span class="math-step font-medium text-gray-800"></span>
+            <span class="text-xs bg-green-100 text-green-800 px-2.5 py-0.5 rounded-full font-semibold uppercase tracking-wider">${nextStep.type}</span>
+          `;
+          historyList.appendChild(newStepLi);
+          MathRenderer.renderInline(nextStep.latex, newStepLi.querySelector('.math-step'));
+
+          // 4. Advance step index
+          currentStepIdx++;
+          hintStepIdx = currentStepIdx;
+
+          // 5. Update main display
+          if (currentStepIdx >= currentEquation.steps.length) {
+            MathRenderer.renderBlock(`x = ${currentEquation.solution.toLaTeX()}`, document.getElementById('current-equation-display'));
+            inputElem.placeholder = "Equation fully solved!";
+            inputElem.value = '';
+          } else {
+            MathRenderer.renderBlock(nextStep.latex, document.getElementById('current-equation-display'));
+            setTimeout(setupOperatorTooltips, 50);
+          }
+
+          updateHints();
+        }
+
+        if (sessionId === solveSessionId) {
+          hideVisualExplanation();
+        }
+      }
+
+      function setupOperatorTooltips() {
+        const equationDisplay = document.getElementById('current-equation-display');
+        const tooltip = document.getElementById('custom-tooltip');
+        
+        const nextStep = currentEquation && currentStepIdx < currentEquation.steps.length 
+          ? currentEquation.steps[currentStepIdx] 
+          : null;
+        if (!nextStep) return;
+
+        const binOps = equationDisplay.querySelectorAll('.mbin');
+        const relOps = equationDisplay.querySelectorAll('.mrel');
+        const fractions = equationDisplay.querySelectorAll('.mfrac');
+        const parens = equationDisplay.querySelectorAll('.mopen, .mclose');
+
+        function showTooltip(e, text) {
+          tooltip.textContent = text;
+          tooltip.classList.remove('opacity-0');
+          const rect = e.target.getBoundingClientRect();
+          const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          
+          tooltip.style.left = `${rect.left + scrollLeft + (rect.width / 2) - (tooltip.offsetWidth / 2)}px`;
+          tooltip.style.top = `${rect.top + scrollTop - tooltip.offsetHeight - 8}px`;
+        }
+
+        function hideTooltip() {
+          tooltip.classList.add('opacity-0');
+        }
+
+        parens.forEach(el => {
+          el.classList.add('cursor-help', 'hover:text-indigo-600', 'transition-colors');
+          el.addEventListener('mouseover', (e) => {
+            if (nextStep.type === 'distribute') {
+              showTooltip(e, "Parentheses: Distribute the multiplication outside into all terms inside.");
+            } else {
+              showTooltip(e, "Parentheses: Groups elements together.");
+            }
+          });
+          el.addEventListener('mouseout', hideTooltip);
+        });
+
+        binOps.forEach(el => {
+          el.classList.add('cursor-help', 'hover:text-indigo-600', 'transition-colors');
+          el.addEventListener('mouseover', (e) => {
+            const op = el.textContent.trim();
+            if (nextStep.type === 'move_constants' && op !== 'x') {
+              showTooltip(e, `Constant Term Operator: Apply the opposite operation '${op === '+' ? '-' : '+'}' to move this constant.`);
+            } else if (nextStep.type === 'move_variables' && el.previousElementSibling && el.previousElementSibling.textContent.includes('x')) {
+              showTooltip(e, `Variable Term Operator: Apply the opposite operation '${op === '+' ? '-' : '+'}' to move this variable term.`);
+            } else {
+              showTooltip(e, `Operator: ${op === '+' ? 'Addition' : 'Subtraction'}`);
+            }
+          });
+          el.addEventListener('mouseout', hideTooltip);
+        });
+
+        fractions.forEach(el => {
+          el.classList.add('cursor-help', 'hover:text-indigo-600', 'transition-colors');
+          el.addEventListener('mouseover', (e) => {
+            showTooltip(e, "Fraction: Represents division. Multiply both sides by the denominator to clear it.");
+          });
+          el.addEventListener('mouseout', hideTooltip);
+        });
+
+        relOps.forEach(el => {
+          el.classList.add('cursor-help', 'hover:text-indigo-600', 'transition-colors');
+          el.addEventListener('mouseover', (e) => {
+            showTooltip(e, "Equals: Keep both sides balanced by applying identical operations to LHS and RHS.");
+          });
+          el.addEventListener('mouseout', hideTooltip);
+        });
+      }
+
+      // Event Listeners for controls
+      document.getElementById('anim-speed').addEventListener('input', function() {
+        document.getElementById('anim-speed-display').textContent = `${parseFloat(this.value).toFixed(1)}s`;
+        if (animPlaying) {
+          startAnimTimer();
+        }
+      });
+
+      document.getElementById('btn-anim-play').addEventListener('click', function() {
+        animPlaying = !animPlaying;
+        this.textContent = animPlaying ? "Pause" : "Play";
+        if (animPlaying) {
+          startAnimTimer();
+        } else {
+          if (animInterval) clearInterval(animInterval);
+        }
+      });
+
+      document.getElementById('btn-anim-prev').addEventListener('click', function() {
+        animPlaying = false;
+        document.getElementById('btn-anim-play').textContent = "Play";
+        if (animInterval) clearInterval(animInterval);
+        animIndex = (animIndex - 1 + animFrames.length) % animFrames.length;
+        showFrame(animIndex);
+      });
+
+      document.getElementById('btn-anim-next').addEventListener('click', function() {
+        animPlaying = false;
+        document.getElementById('btn-anim-play').textContent = "Play";
+        if (animInterval) clearInterval(animInterval);
+        animIndex = (animIndex + 1) % animFrames.length;
+        showFrame(animIndex);
+      });
+
+      document.getElementById('config-show-key').addEventListener('change', updateDevKeyVisibility);
+
+      document.getElementById('step-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (!currentEquation) return;
+
+          const userInput = this.value.trim();
+          if (userInput === '') return;
+
+          if (userInput.toLowerCase() === 'solve') {
+            this.value = '';
+            autoSolve();
+            return;
+          }
+
+          const nextStep = currentEquation.steps[currentStepIdx];
+          const validation = EquationGenerator.validateStep(userInput, nextStep);
+
+          if (validation.valid) {
+            this.classList.remove('border-red-500', 'focus:border-red-500');
+            this.classList.add('border-green-500', 'focus:border-green-500');
+            
+            const historyList = document.getElementById('history-list');
+            if (currentStepIdx === 0) {
+              historyList.innerHTML = '';
+            }
+            
+            const newStepLi = document.createElement('li');
+            newStepLi.className = 'flex items-center justify-between py-2 border-b border-gray-100 last:border-0';
+            newStepLi.innerHTML = `
+              <span class="math-step font-medium text-gray-800"></span>
+              <span class="text-xs bg-green-100 text-green-800 px-2.5 py-0.5 rounded-full font-semibold uppercase tracking-wider">${nextStep.type}</span>
+            `;
+            historyList.appendChild(newStepLi);
+
+            MathRenderer.renderInline(nextStep.latex, newStepLi.querySelector('.math-step'));
+
+            // Advance state
+            currentStepIdx++;
+            hintStepIdx = currentStepIdx; // Reset hint tracking to new active step
+            hideVisualExplanation();
+            
+            if (currentStepIdx >= currentEquation.steps.length) {
+              this.disabled = true;
+              this.placeholder = "Equation fully solved!";
+              this.value = '';
+              MathRenderer.renderBlock(`x = ${currentEquation.solution.toLaTeX()}`, document.getElementById('current-equation-display'));
+            } else {
+              MathRenderer.renderBlock(nextStep.latex, document.getElementById('current-equation-display'));
+              this.value = '';
+              this.classList.remove('border-green-500', 'focus:border-green-500');
+              setTimeout(setupOperatorTooltips, 50);
+            }
+            updateHints();
+          } else {
+            this.classList.remove('border-green-500', 'focus:border-green-500');
+            this.classList.add('border-red-500', 'focus:border-red-500');
+            alert(validation.errorMsg);
+          }
+        }
+
+        // Handle Tab Autocomplete / Hints
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          if (!currentEquation || currentStepIdx >= currentEquation.steps.length) return;
+
+          // Animate and show visual explanation for the step at hintStepIdx
+          triggerVisualExplanation(hintStepIdx);
+
+          // Advance hintStepIdx for subsequent Tab presses, wrapping back to currentStepIdx
+          hintStepIdx++;
+          if (hintStepIdx >= currentEquation.steps.length) {
+            hintStepIdx = currentStepIdx;
+          }
+        }
+      });
+
+      document.getElementById('btn-generate').addEventListener('click', generateNew);
+
+      // Navbar Mode Toggles
+      document.getElementById('btn-mode-solver').addEventListener('click', function() {
+        this.classList.remove('bg-white', 'text-gray-700', 'border', 'border-gray-300');
+        this.classList.add('bg-primary', 'text-white');
+        
+        const btnGen = document.getElementById('btn-mode-generator');
+        btnGen.classList.remove('bg-primary', 'text-white');
+        btnGen.classList.add('bg-white', 'text-gray-700', 'border', 'border-gray-300');
+        
+        document.getElementById('mode-solver-container').classList.remove('hidden');
+        document.getElementById('mode-generator-container').classList.add('hidden');
+      });
+
+      document.getElementById('btn-mode-generator').addEventListener('click', function() {
+        this.classList.remove('bg-white', 'text-gray-700', 'border', 'border-gray-300');
+        this.classList.add('bg-primary', 'text-white');
+        
+        const btnSolv = document.getElementById('btn-mode-solver');
+        btnSolv.classList.remove('bg-primary', 'text-white');
+        btnSolv.classList.add('bg-white', 'text-gray-700', 'border', 'border-gray-300');
+        
+        document.getElementById('mode-solver-container').classList.add('hidden');
+        document.getElementById('mode-generator-container').classList.remove('hidden');
+      });
+
+      // Worksheet Generator logic
+      function generateWorksheet() {
+        const count = parseInt(document.getElementById('gen-count').value, 10);
+        const steps = parseInt(document.getElementById('gen-steps').value, 10);
+        const allowNegatives = document.getElementById('gen-negatives').checked;
+        const allowFractions = document.getElementById('gen-fractions').checked;
+        const allowParenthesis = document.getElementById('gen-parenthesis').checked;
+
+        const grid = document.getElementById('worksheet-grid');
+        const keyGrid = document.getElementById('worksheet-key-grid');
+
+        grid.innerHTML = '';
+        keyGrid.innerHTML = '';
+
+        // Spacing heights (based on standard A4 page layout blocks)
+        let problemHeight = 150;
+        if (count <= 6) problemHeight = 220;
+        else if (count === 8) problemHeight = 190;
+        else if (count === 16) problemHeight = 90;
+
+        for (let i = 0; i < count; i++) {
+          const eq = EquationGenerator.generate({
+            steps,
+            allowNegatives,
+            allowFractions,
+            allowParenthesis
+          });
+
+          // 1. Worksheet Problem Cell
+          const cell = document.createElement('div');
+          cell.className = 'border-2 border-dashed border-gray-200 rounded-xl p-4 flex flex-col justify-between';
+          cell.style.minHeight = `${problemHeight}px`;
+          cell.innerHTML = `
+            <div class="font-bold text-gray-600 text-sm mb-2 select-none">Problem ${i + 1}</div>
+            <div class="math-problem-display text-center text-xl flex-grow flex items-center justify-center"></div>
+            <div class="text-[10px] text-gray-300 uppercase tracking-wider text-right mt-2 font-semibold select-none">Show work here</div>
+          `;
+          grid.appendChild(cell);
+
+          const eqLaTeX = `${eq.initialLHS} = ${eq.initialRHS}`;
+          MathRenderer.renderBlock(eqLaTeX, cell.querySelector('.math-problem-display'));
+
+          // 2. Answer Key Cell
+          const answerCell = document.createElement('div');
+          answerCell.className = 'border border-gray-200 rounded-xl p-4 bg-gray-50/50 space-y-2';
+          answerCell.innerHTML = `
+            <div class="font-bold text-gray-700 text-sm">Problem ${i + 1}</div>
+            <div class="math-key-display text-md font-semibold text-indigo-700"></div>
+            <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-2 border-t border-gray-200/50 pt-2">Steps:</div>
+            <div class="math-key-steps text-xs font-mono text-gray-600 space-y-1"></div>
+          `;
+          keyGrid.appendChild(answerCell);
+
+          MathRenderer.renderInline(`${eqLaTeX} \\implies x = ${eq.solution.toLaTeX()}`, answerCell.querySelector('.math-key-display'));
+
+          const stepsList = answerCell.querySelector('.math-key-steps');
+          eq.steps.forEach((s, idx) => {
+            const stepDiv = document.createElement('div');
+            stepDiv.textContent = `Step ${idx + 1} (${s.type}): ${s.latex.replace(/[\{\}]/g, '')}`;
+            stepsList.appendChild(stepDiv);
+          });
+        }
+
+        updateAnswerKeyVisibility();
+      }
+
+      function updateAnswerKeyVisibility() {
+        const includeKey = document.getElementById('gen-show-key').checked;
+        const keyPage = document.getElementById('worksheet-key-page');
+        
+        if (includeKey) {
+          keyPage.classList.remove('hidden');
+          keyPage.classList.remove('no-print');
+        } else {
+          keyPage.classList.add('hidden');
+          keyPage.classList.add('no-print');
+        }
+      }
+
+      document.getElementById('gen-show-key').addEventListener('change', updateAnswerKeyVisibility);
+      document.getElementById('btn-generate-sheet').addEventListener('click', generateWorksheet);
+      document.getElementById('btn-print-sheet').addEventListener('click', () => {
+        window.print();
+      });
+
+      window.addEventListener('DOMContentLoaded', () => {
+        generateNew();
+        generateWorksheet();
+      });
+    </script>
+</body>
+</html>

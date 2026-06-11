@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kids School Helpers - Unit Test Runner</title>
+    <!-- Tailwind CSS Release Notes: https://github.com/tailwindlabs/tailwindcss/releases/tag/v3.4.4 -->
+    <script src="https://cdn.tailwindcss.com?version=3.4.4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen p-8">
+    <main class="max-w-4xl mx-auto space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-200 pb-4">
+            <div>
+                <h1 class="text-3xl font-extrabold tracking-tight text-gray-900">Unit Test Runner</h1>
+                <p class="text-gray-500 text-sm mt-1">Static logic verification for Kids School Helpers</p>
+            </div>
+            <a href="../pre-algebra-solver/" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">&larr; Back to App</a>
+        </div>
+
+        <!-- Summary Dashboard Card -->
+        <div class="grid grid-cols-3 gap-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="text-center border-r border-gray-100 last:border-0">
+                <span class="block text-4xl font-bold text-gray-900" id="stat-total">0</span>
+                <span class="text-xs uppercase tracking-wider font-semibold text-gray-400 mt-1 block">Total Tests</span>
+            </div>
+            <div class="text-center border-r border-gray-100 last:border-0">
+                <span class="block text-4xl font-bold text-green-600" id="stat-passed">0</span>
+                <span class="text-xs uppercase tracking-wider font-semibold text-gray-400 mt-1 block font-medium">Passed</span>
+            </div>
+            <div class="text-center">
+                <span class="block text-4xl font-bold text-red-600" id="stat-failed">0</span>
+                <span class="text-xs uppercase tracking-wider font-semibold text-gray-400 mt-1 block font-medium">Failed</span>
+            </div>
+        </div>
+
+        <!-- Test Suites Container -->
+        <div id="suites-container" class="space-y-4">
+            <!-- Suites will be injected here -->
+        </div>
+    </main>
+
+    <!-- Source Files -->
+    <script src="../pre-algebra-solver/js/fraction.js?v=1.0.1"></script>
+    <script src="../pre-algebra-solver/js/generator.js?v=1.0.1"></script>
+    <script src="unit-tests.js?v=1.0.1"></script>
+    
+    <script>
+      window.addEventListener('DOMContentLoaded', () => {
+        testSuite.run((summary) => {
+          document.getElementById('stat-total').textContent = summary.total;
+          document.getElementById('stat-passed').textContent = summary.passed;
+          document.getElementById('stat-failed').textContent = summary.failed;
+
+          const container = document.getElementById('suites-container');
+          container.innerHTML = '';
+
+          summary.results.forEach(suite => {
+            const suiteCard = document.createElement('div');
+            suiteCard.className = 'bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden';
+            
+            const hasFailures = suite.tests.some(t => !t.passed);
+            const headerColor = hasFailures ? 'bg-red-50 border-red-100' : 'bg-green-50 border-green-100';
+            const titleColor = hasFailures ? 'text-red-900' : 'text-green-900';
+
+            suiteCard.innerHTML = `
+              <div class="px-6 py-4 border-b flex items-center justify-between ${headerColor}">
+                <h2 class="text-md font-bold ${titleColor}">${suite.name}</h2>
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${hasFailures ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}">
+                  ${suite.tests.filter(t => t.passed).length}/${suite.tests.length} Passed
+                </span>
+              </div>
+              <ul class="divide-y divide-gray-100 px-6">
+                ${suite.tests.map(test => `
+                  <li class="py-3.5 flex items-start justify-between text-sm">
+                    <div class="space-y-1">
+                      <div class="flex items-center space-x-2">
+                        <span>${test.passed ? '✅' : '❌'}</span>
+                        <span class="font-medium ${test.passed ? 'text-gray-700' : 'text-red-600 font-semibold'}">${test.desc}</span>
+                      </div>
+                      ${!test.passed ? `<p class="text-xs text-red-500 font-mono pl-6 bg-red-50/50 p-2 rounded border border-red-100 mt-1">${test.error}</p>` : ''}
+                    </div>
+                    <span class="text-xs text-gray-400 font-mono">${test.time.toFixed(2)}ms</span>
+                  </li>
+                `).join('')}
+              </ul>
+            `;
+            container.appendChild(suiteCard);
+          });
+        });
+      });
+    </script>
+</body>
+</html>
