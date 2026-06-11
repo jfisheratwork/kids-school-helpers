@@ -202,6 +202,61 @@
             if (!grid.querySelector('.katex')) throw new Error("Worksheet problems did not render math");
             if (!keyGrid.querySelector('.katex')) throw new Error("Answer key did not render math");
           }
+        },
+        {
+          name: "Verify Hints Panel Updates on Animation Step Navigation",
+          fn: async (iframeWin, iframeDoc) => {
+            // First, switch back to Solver mode
+            const btnSolv = iframeDoc.getElementById('btn-mode-solver');
+            if (btnSolv) {
+              btnSolv.click();
+              await new Promise(r => setTimeout(r, 200));
+            }
+
+            // Unconditionally generate a fresh equation to reset any solved or disabled states from prior tests
+            iframeWin.generateNew();
+            await new Promise(r => setTimeout(r, 200));
+
+            const input = iframeDoc.getElementById('step-input');
+            const explanationContainer = iframeDoc.getElementById('visual-explanation-container');
+            const hintContent = iframeDoc.getElementById('hint-content');
+            const btnNext = iframeDoc.getElementById('btn-anim-next');
+
+            if (!input || !explanationContainer || !hintContent || !btnNext) {
+              throw new Error("Solver elements not found");
+            }
+
+            // Ensure we have a multi-step equation (generate with at least 2 steps)
+            const stepsSel = iframeDoc.getElementById('config-steps');
+            if (stepsSel) {
+              stepsSel.value = "3";
+              iframeDoc.getElementById('btn-generate').click();
+              await new Promise(r => setTimeout(r, 300));
+            }
+
+            const totalSteps = iframeWin.currentEquation.steps.length;
+            if (totalSteps < 2) throw new Error("Generated equation must have at least 2 steps for testing navigation");
+
+            // Trigger visual explanation for Step 1 directly (which doesn't pre-advance hintStepIdx like keypress does)
+            iframeWin.triggerVisualExplanation(0);
+            await new Promise(r => setTimeout(r, 100));
+
+            // Verify explanation box is visible and hints shows Step 1
+            if (explanationContainer.classList.contains('hidden')) throw new Error("Visual explanation container remained hidden on Tab press");
+            if (!hintContent.textContent.includes("Step 1 of")) throw new Error(`Expected hint content to say 'Step 1 of', but got: "${hintContent.textContent}"`);
+
+            // Force animIndex to the end of the first step's frames so that clicking Next changes the step
+            iframeWin.animIndex = iframeWin.animFrames.length - 1;
+
+            // Click the Next button to move to Step 2
+            btnNext.click();
+            await new Promise(r => setTimeout(r, 100));
+
+            // Verify hint content text has updated to "Step 2 of"
+            if (!hintContent.textContent.includes("Step 2 of")) {
+              throw new Error(`Expected hint content to update to 'Step 2 of' on Next step, but got: "${hintContent.textContent}"`);
+            }
+          }
         }
       ];
 

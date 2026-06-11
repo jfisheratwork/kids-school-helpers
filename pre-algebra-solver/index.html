@@ -332,7 +332,7 @@
     <script src="js/generator.js?v=1.0.1"></script>
     <script src="js/renderer.js?v=1.0.1"></script>
     <script>
-      let currentEquation = null;
+       let currentEquation = null;
       let currentStepIdx = 0;
       let hintStepIdx = 0;
       let solveSessionId = 0;
@@ -342,6 +342,28 @@
       let animFrames = [];
       let animIndex = 0;
       let animPlaying = false;
+
+      // Expose to window for integration testing
+      Object.defineProperty(window, 'currentEquation', {
+        get: () => currentEquation,
+        set: (val) => { currentEquation = val; }
+      });
+      Object.defineProperty(window, 'currentStepIdx', {
+        get: () => currentStepIdx,
+        set: (val) => { currentStepIdx = val; }
+      });
+      Object.defineProperty(window, 'hintStepIdx', {
+        get: () => hintStepIdx,
+        set: (val) => { hintStepIdx = val; }
+      });
+      Object.defineProperty(window, 'animIndex', {
+        get: () => animIndex,
+        set: (val) => { animIndex = val; }
+      });
+      Object.defineProperty(window, 'animFrames', {
+        get: () => animFrames,
+        set: (val) => { animFrames = val; }
+      });
 
       window.copyAnswerToInput = function(val) {
         const input = document.getElementById('step-input');
@@ -409,15 +431,15 @@
         inputElem.placeholder = "Type your next step here... (Press Tab for hint)";
       }
 
-      function updateHints() {
+      function updateHints(stepIdx = currentStepIdx) {
         const hintContent = document.getElementById('hint-content');
-        if (!currentEquation || currentStepIdx >= currentEquation.steps.length) {
+        if (!currentEquation || stepIdx >= currentEquation.steps.length) {
           hintContent.innerHTML = '<p class="text-green-600 font-medium">Equation Solved! Great job!</p>';
           return;
         }
-        const nextStep = currentEquation.steps[currentStepIdx];
-        const isFinalStep = (currentStepIdx === currentEquation.steps.length - 1);
-        const stepNumDisplay = `Step ${currentStepIdx + 1} of ${currentEquation.steps.length}`;
+        const nextStep = currentEquation.steps[stepIdx];
+        const isFinalStep = (stepIdx === currentEquation.steps.length - 1);
+        const stepNumDisplay = `Step ${stepIdx + 1} of ${currentEquation.steps.length}`;
         const finalBadge = isFinalStep ? ` <span class="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ml-2 shadow-sm border border-green-200">Final Step</span>` : '';
         
         let objectiveTitle = '';
@@ -495,9 +517,9 @@
         }
       }
 
-      function applyViewTransitionNames(container) {
+      function applyViewTransitionNames(container, prefix = '') {
         container.querySelectorAll('[id]').forEach(el => {
-          el.style.viewTransitionName = el.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+          el.style.viewTransitionName = prefix + el.id.replace(/[^a-zA-Z0-9_-]/g, '_');
         });
       }
 
@@ -505,15 +527,15 @@
         const display = document.getElementById('current-equation-display');
         if (!document.startViewTransition) {
           MathRenderer.renderBlock(latex, display);
-          applyViewTransitionNames(display);
+          applyViewTransitionNames(display, 'eq_');
           return;
         }
         display.querySelectorAll('[id]').forEach(el => {
-          el.style.viewTransitionName = el.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+          el.style.viewTransitionName = 'eq_' + el.id.replace(/[^a-zA-Z0-9_-]/g, '_');
         });
         document.startViewTransition(() => {
           MathRenderer.renderBlock(latex, display);
-          applyViewTransitionNames(display);
+          applyViewTransitionNames(display, 'eq_');
         });
       }
 
@@ -544,19 +566,19 @@
         
         if (!document.startViewTransition) {
           MathRenderer.renderBlock(animFrames[index], display);
-          applyViewTransitionNames(display);
+          applyViewTransitionNames(display, 'vis_');
           counter.textContent = `${index + 1}/${animFrames.length}`;
           updateAnimationButtons();
           return;
         }
         
         display.querySelectorAll('[id]').forEach(el => {
-          el.style.viewTransitionName = el.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+          el.style.viewTransitionName = 'vis_' + el.id.replace(/[^a-zA-Z0-9_-]/g, '_');
         });
 
         document.startViewTransition(() => {
           MathRenderer.renderBlock(animFrames[index], display);
-          applyViewTransitionNames(display);
+          applyViewTransitionNames(display, 'vis_');
           counter.textContent = `${index + 1}/${animFrames.length}`;
           updateAnimationButtons();
         });
@@ -590,6 +612,9 @@
 
         // Start animation playback
         playAnimation(targetStep.animationFrames, autoplay);
+
+        // Update active hint to match visual explanation step
+        updateHints(stepIdx);
 
         // Show visual explanation box
         explanationContainer.classList.remove('hidden');
@@ -772,9 +797,10 @@
           animFrames = targetStep.animationFrames;
           animIndex = animFrames.length - 1;
           showFrame(animIndex);
+          updateHints(hintStepIdx);
         }
       });
-
+ 
       document.getElementById('btn-anim-next').addEventListener('click', function() {
         animPlaying = false;
         document.getElementById('btn-anim-play').textContent = "Play";
@@ -789,6 +815,7 @@
           animFrames = targetStep.animationFrames;
           animIndex = 0;
           showFrame(animIndex);
+          updateHints(hintStepIdx);
         }
       });
 
