@@ -94,7 +94,7 @@
           }
         },
         {
-          name: "Verify Tab Key Cycles Hints (Autoplays By Default)",
+          name: "Verify Tab Key Cycles Hints (No Autoplay)",
           fn: async (iframeWin, iframeDoc) => {
             const input = iframeDoc.getElementById('step-input');
             const explanationContainer = iframeDoc.getElementById('visual-explanation-container');
@@ -118,8 +118,8 @@
             // Verify KaTeX math rendered in the explanation frame
             if (!display.querySelector('.katex')) throw new Error("Explanation frame did not render KaTeX");
 
-            // Verify that the animation starts in PLAYING state
-            if (!iframeWin.animPlaying) throw new Error("Animation expected to start playing automatically");
+            // Verify that the animation is NOT playing automatically
+            if (iframeWin.animPlaying) throw new Error("Animation expected to NOT autoplay");
 
             // Verify that the text box remains empty (did not change)
             if (input.value !== '') throw new Error(`Tab key expected to leave input box empty, but it got: "${input.value}"`);
@@ -199,17 +199,17 @@
             btnGenerateSheet.click();
             await new Promise(r => setTimeout(r, 500));
 
-            // Verify problem grid cells
-            const grid = iframeDoc.getElementById('worksheet-grid');
-            if (grid.children.length !== 6) throw new Error(`Expected 6 problems in the grid, but got: ${grid.children.length}`);
+            // Verify problem grid cells (now paginated, so we query all problem cells)
+            const problemCells = iframeDoc.querySelectorAll('.worksheet-page:not(.worksheet-key-page) .border-dashed');
+            if (problemCells.length !== 6) throw new Error(`Expected 6 problems in the grid, but got: ${problemCells.length}`);
 
             // Verify answer key grid cells
-            const keyGrid = iframeDoc.getElementById('worksheet-key-grid');
-            if (keyGrid.children.length !== 6) throw new Error(`Expected 6 answers in key grid, but got: ${keyGrid.children.length}`);
+            const answerCells = iframeDoc.querySelectorAll('.worksheet-key-page .bg-gray-50\\/50');
+            if (answerCells.length !== 6) throw new Error(`Expected 6 answers in key grid, but got: ${answerCells.length}`);
 
             // Verify KaTeX math rendered in the cells
-            if (!grid.querySelector('.katex')) throw new Error("Worksheet problems did not render math");
-            if (!keyGrid.querySelector('.katex')) throw new Error("Answer key did not render math");
+            if (!problemCells[0].querySelector('.katex')) throw new Error("Worksheet problems did not render math");
+            if (!answerCells[0].querySelector('.katex')) throw new Error("Answer key did not render math");
           }
         },
         {
@@ -264,6 +264,164 @@
             // Verify hint content text has updated to "Step 2 of"
             if (!hintContent.textContent.includes("Step 2 of")) {
               throw new Error(`Expected hint content to update to 'Step 2 of' on Next step, but got: "${hintContent.textContent}"`);
+            }
+          }
+        },
+        {
+          name: "Verify Full Manual Solve (Without Hints)",
+          fn: async (iframeWin, iframeDoc) => {
+            const btnSolv = iframeDoc.getElementById('btn-mode-solver');
+            if (btnSolv) { btnSolv.click(); await new Promise(r => setTimeout(r, 200)); }
+            
+            const stepsSel = iframeDoc.getElementById('config-steps');
+            if (stepsSel) { stepsSel.value = "3"; }
+            iframeWin.generateNew();
+            await new Promise(r => setTimeout(r, 300));
+
+            const input = iframeDoc.getElementById('step-input');
+            const display = iframeDoc.getElementById('current-equation-display');
+            const explanationContainer = iframeDoc.getElementById('visual-explanation-container');
+
+            if (!input || !display) throw new Error("Solver elements not found");
+
+            const eq = iframeWin.currentEquation;
+            if (!eq || eq.steps.length !== 3) throw new Error("Expected a 3-step equation");
+
+            for (let i = 0; i < eq.steps.length; i++) {
+              const step = eq.steps[i];
+              
+              // Enter correct answer directly without hints
+              const answer = step.latex;
+              
+              input.value = answer;
+              input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+              await new Promise(r => setTimeout(r, 600));
+
+              if (!explanationContainer.classList.contains('hidden')) {
+                throw new Error(`Visual explanation incorrectly showed up on step ${i + 1}`);
+              }
+            }
+
+            if (!input.disabled || input.placeholder !== "Equation fully solved!") {
+              throw new Error("Equation did not complete full manual solve correctly.");
+            }
+          }
+        },
+        {
+          name: "Verify Full Interactive Solve (With Hints)",
+          fn: async (iframeWin, iframeDoc) => {
+            const btnSolv = iframeDoc.getElementById('btn-mode-solver');
+            if (btnSolv) { btnSolv.click(); await new Promise(r => setTimeout(r, 200)); }
+            
+            const stepsSel = iframeDoc.getElementById('config-steps');
+            if (stepsSel) { stepsSel.value = "3"; }
+            iframeWin.generateNew();
+            await new Promise(r => setTimeout(r, 300));
+
+            const input = iframeDoc.getElementById('step-input');
+            const btnNext = iframeDoc.getElementById('btn-anim-next');
+            const explanationContainer = iframeDoc.getElementById('visual-explanation-container');
+
+            const eq = iframeWin.currentEquation;
+            if (!eq || eq.steps.length !== 3) throw new Error("Expected a 3-step equation");
+
+            for (let i = 0; i < eq.steps.length; i++) {
+              const step = eq.steps[i];
+
+              // Press Tab to open hints
+              input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+              await new Promise(r => setTimeout(r, 200));
+
+              if (explanationContainer.classList.contains('hidden')) {
+                throw new Error(`Visual explanation failed to show on step ${i + 1}`);
+              }
+
+              // Manually walk through the frames using 'Next' button
+              for (let f = 1; f < step.animationFrames.length; f++) {
+                btnNext.click();
+                await new Promise(r => setTimeout(r, 100));
+              }
+
+              // Enter correct answer to proceed
+              const answer = step.latex;
+
+              input.value = answer;
+              input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+              await new Promise(r => setTimeout(r, 600));
+            }
+
+            if (!input.disabled || input.placeholder !== "Equation fully solved!") {
+              throw new Error("Equation did not complete full interactive solve correctly.");
+            }
+          }
+        },
+        {
+          name: "Verify Auto-Solve via Hint Player Next Button",
+          fn: async (iframeWin, iframeDoc) => {
+            const btnSolv = iframeDoc.getElementById('btn-mode-solver');
+            if (btnSolv) { btnSolv.click(); await new Promise(r => setTimeout(r, 200)); }
+            
+            const stepsSel = iframeDoc.getElementById('config-steps');
+            if (stepsSel) { stepsSel.value = "3"; }
+            iframeWin.generateNew();
+            await new Promise(r => setTimeout(r, 300));
+
+            const input = iframeDoc.getElementById('step-input');
+            const btnNext = iframeDoc.getElementById('btn-anim-next');
+            const explanationContainer = iframeDoc.getElementById('visual-explanation-container');
+
+            const eq = iframeWin.currentEquation;
+            if (!eq || eq.steps.length !== 3) throw new Error("Expected a 3-step equation");
+
+            for (let i = 0; i < eq.steps.length; i++) {
+              const step = eq.steps[i];
+
+              // Press Tab to open hints (only needed for first step, but safe to hit Tab again just in case, wait no, if it's open it's fine)
+              if (explanationContainer.classList.contains('hidden')) {
+                input.focus();
+                input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+                await new Promise(r => setTimeout(r, 200));
+              }
+
+              if (explanationContainer.classList.contains('hidden')) {
+                throw new Error(`Visual explanation failed to show on step ${i + 1}`);
+              }
+
+              // Manually walk through all frames using 'Next' button
+              for (let f = 1; f < step.animationFrames.length; f++) {
+                btnNext.click();
+                await new Promise(r => setTimeout(r, 100));
+              }
+
+              // Now we are on the LAST frame of the current step.
+              // We want to test clicking 'Next' again to auto-solve and advance to the NEXT step's hint.
+              if (i < eq.steps.length - 1) {
+                // Click Next to auto-solve and advance hint
+                btnNext.click();
+                await new Promise(r => setTimeout(r, 400)); // wait for transitions and submit logic
+                
+                const historyList = iframeDoc.getElementById('history-list');
+                if (historyList.children.length !== i + 2) {
+                  throw new Error(`Auto-solve failed: history list has ${historyList.children.length} items, expected ${i + 2}`);
+                }
+                if (explanationContainer.classList.contains('hidden')) {
+                  throw new Error("Hint container closed unexpectedly after auto-solve click");
+                }
+              } else {
+                // On the very last step of the equation, the Next button shouldn't advance to a new hint step
+                // (It should be disabled or not do anything). We must manually submit the final answer, or 
+                // wait, does btnNext auto-solve the final step?
+                // The logic says: else if (animIndex === ... && hintStepIdx < steps.length - 1)
+                // So it DOES NOT auto-solve the final step! The user must manually solve the final step, or we need to add auto-solve for final step too?
+                // Let's test just typing it for the final step.
+                input.value = step.latex;
+                input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+                await new Promise(r => setTimeout(r, 600));
+              }
+            }
+
+            if (!input.disabled || input.placeholder !== "Equation fully solved!") {
+              throw new Error("Equation did not complete full solve correctly.");
             }
           }
         }

@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script src="js/fraction.js"></script>
+<script src="js/generator.js"></script>
+<script>
+window.MathRenderer = { renderInline: () => {} };
+const eq = EquationGenerator.generate({steps:2});
+const iso = eq.steps[eq.steps.length - 1];
+document.body.innerText = JSON.stringify(iso.animationFrames, null, 2);
+</script>
+</body>
+</html>
