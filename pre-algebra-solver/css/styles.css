@@ -1,0 +1,61 @@
+@media print {
+  /* Hide all interface elements not meant for physical paper */
+  nav, 
+  details, 
+  .no-print, 
+  button,
+  input,
+  select,
+  #dev-steps-panel {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  main {
+    margin-top: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* Format worksheet page to Letter dimensions */
+  .worksheet-page {
+    border: none !important;
+    box-shadow: none !important;
+    width: 8.5in !important;
+    height: 10.5in !important;
+    padding: 0.5in !important;
+    margin: 0 auto !important;
+    page-break-after: always !important;
+  }
+
+  #worksheet-key-page {
+    page-break-before: always !important;
+  }
+}
+
+/* Screen styling to mimic Letter paper size */
+@media screen {
+  .worksheet-page {
+    width: 8.5in;
+    min-height: 11in;
+    max-width: 100%;
+  }
+}
+
+/* Dynamic View Transition Duration */
+:root {
+  --transition-duration: 4.0s;
+}
+html.slow-transition::view-transition-group(*) {
+  animation-duration: var(--transition-duration) !important;
+}
+html.slow-transition::view-transition-old(*),
+html.slow-transition::view-transition-new(*) {
+  animation-duration: var(--transition-duration) !important;
+}
