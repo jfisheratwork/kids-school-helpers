@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kids School Helpers - Graphing Lines Tests</title>
+    <script src="https://cdn.tailwindcss.com?version=3.4.4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } } }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen p-8">
+    <main class="max-w-5xl mx-auto space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-200 pb-4">
+            <div>
+                <h1 class="text-3xl font-extrabold tracking-tight text-gray-900">Integration Test Runner (Graphing Lines)</h1>
+            </div>
+            <a href="../graphing-lines/" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">&larr; Back to App</a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-1 space-y-4">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
+                    <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Test Suite Progress</h2>
+                    <div id="summary-badge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 uppercase tracking-wide">
+                        Running...
+                    </div>
+                    <ul id="test-list" class="divide-y divide-gray-100 text-sm"></ul>
+                </div>
+            </div>
+            <div class="md:col-span-2 space-y-4">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                    <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Live Session Sandbox</h2>
+                    <iframe id="app-frame" src="../graphing-lines/" class="w-full h-[650px] border border-gray-200 rounded-lg shadow-inner"></iframe>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+      const tests = [
+        {
+          name: "Verify App Loads and KaTeX is Defined",
+          fn: async (iframeWin, iframeDoc) => {
+            if (!iframeWin.katex) {
+              throw new Error("KaTeX is not defined. Ensure the SRI hashes are correct and the library loaded.");
+            }
+            const display = iframeDoc.getElementById('target-equation-display');
+            if (!display) throw new Error("Display element not found");
+            const katexHTML = display.querySelector('.katex');
+            if (!katexHTML) throw new Error("KaTeX failed to render the initial equation on load.");
+          }
+        },
+        {
+          name: "Verify Interactive Graphing Mode State Machine",
+          fn: async (iframeWin, iframeDoc) => {
+            const btnInteractive = iframeDoc.getElementById('btn-mode-interactive');
+            btnInteractive.click();
+            await new Promise(r => setTimeout(r, 200));
+
+            const eq = iframeWin.state.currentEquation;
+            if (!eq) throw new Error("No active equation found.");
+
+            const svg = iframeDoc.querySelector('#graph-container svg');
+            
+            // Trigger 2 correct clicks in sequence
+            let mNum = eq.type === 'slope-intercept' ? eq.m.num : -eq.A;
+            let mDen = eq.type === 'slope-intercept' ? eq.m.den : eq.B;
+            let b = eq.type === 'slope-intercept' ? eq.b : eq.C / eq.B;
+
+            // Simulate clicking Y-intercept
+            let svgX1 = 300; // x=0 is origin
+            let svgY1 = 300 - (b * 30);
+            
+            const rect = svg.getBoundingClientRect();
+            let e1 = new MouseEvent('click', {
+               clientX: rect.left + (svgX1 * rect.width / 600),
+               clientY: rect.top + (svgY1 * rect.height / 600),
+               bubbles: true
+            });
+            svg.dispatchEvent(e1);
+            
+            await new Promise(r => setTimeout(r, 100));
+            if (iframeWin.state.interactive.step !== 1) {
+               throw new Error(`Failed to advance state machine after clicking y-intercept. Expected b=${b}. rect=${rect.width}x${rect.height}. clientX=${e1.clientX}, clientY=${e1.clientY}.`);
+            }
+
+            // Click second point (x=mDen, y=b+mNum)
+            let x2 = mDen;
+            let y2 = b + (mNum); // wait, if m is fraction, expectedY = m*x + b -> (mNum/mDen)*mDen + b = mNum + b. Correct.
+            let svgX2 = 300 + (x2 * 30);
+            let svgY2 = 300 - (y2 * 30);
+            
+            let e2 = new MouseEvent('click', {
+               clientX: rect.left + (svgX2 * rect.width / 600),
+               clientY: rect.top + (svgY2 * rect.height / 600),
+               bubbles: true
+            });
+            svg.dispatchEvent(e2);
+
+            await new Promise(r => setTimeout(r, 100));
+            if (iframeWin.state.interactive.step !== 2) throw new Error("Failed to advance state machine after clicking second point.");
+            
+            const points = iframeDoc.querySelectorAll('#dynamic-graph-elements circle[fill="#10b981"]');
+            if (points.length < 2) throw new Error("Points did not render as green upon correct clicks.");
+          }
+        },
+        {
+          name: "Verify Determine Mode State Machine",
+          fn: async (iframeWin, iframeDoc) => {
+            const btnDetermine = iframeDoc.getElementById('btn-mode-determine');
+            btnDetermine.click();
+            await new Promise(r => setTimeout(r, 200));
+
+            const eq = iframeWin.state.currentEquation;
+            const svg = iframeDoc.querySelector('#graph-container svg');
+
+            let mNum = eq.type === 'slope-intercept' ? eq.m.num : -eq.A;
+            let mDen = eq.type === 'slope-intercept' ? eq.m.den : eq.B;
+            let b = eq.type === 'slope-intercept' ? eq.b : eq.C / eq.B;
+
+            const rect = svg.getBoundingClientRect();
+
+            // Click y-intercept
+            let svgX1 = 300;
+            let svgY1 = 300 - (b * 30);
+            let e1 = new MouseEvent('click', {
+               clientX: rect.left + (svgX1 * rect.width / 600),
+               clientY: rect.top + (svgY1 * rect.height / 600),
+               bubbles: true
+            });
+            svg.dispatchEvent(e1);
+            
+            await new Promise(r => setTimeout(r, 100));
+            if (iframeWin.state.determine.step !== 1) {
+              throw new Error(`Failed to advance to step 1 in determine mode. Expected b=${b}. rect=${rect.width}x${rect.height}. clientX=${e1.clientX}.`);
+            }
+
+            // Click second point
+            let x2 = mDen;
+            let y2 = b + (mNum);
+            let svgX2 = 300 + (x2 * 30);
+            let svgY2 = 300 - (y2 * 30);
+            let e2 = new MouseEvent('click', {
+               clientX: rect.left + (svgX2 * rect.width / 600),
+               clientY: rect.top + (svgY2 * rect.height / 600),
+               bubbles: true
+            });
+            svg.dispatchEvent(e2);
+
+            await new Promise(r => setTimeout(r, 100));
+            if (iframeWin.state.determine.step !== 2) throw new Error("Failed to advance to step 2 in determine mode.");
+
+            // Verify equation input is visible
+            const eqInput = iframeDoc.getElementById('equation-input-container');
+            if (eqInput.classList.contains('hidden')) throw new Error("Equation input did not become visible after identifying points.");
+          }
+        },
+        {
+          name: "Verify Worksheet Mode Generations",
+          fn: async (iframeWin, iframeDoc) => {
+            const btnWorksheet = iframeDoc.getElementById('btn-mode-worksheet');
+            btnWorksheet.click();
+            await new Promise(r => setTimeout(r, 300));
+
+            // Verify 6 problems are generated
+            const problems = iframeDoc.querySelectorAll('#worksheet-grid > div');
+            if (problems.length !== 6) throw new Error("Expected 6 worksheet problems to be generated.");
+
+            // Enable Answer Key
+            const checkKey = iframeDoc.getElementById('config-show-key');
+            checkKey.checked = true;
+            checkKey.dispatchEvent(new Event('change'));
+            await new Promise(r => setTimeout(r, 200));
+
+            // Check if lines are drawn with red stroke
+            const firstProblem = iframeDoc.querySelector('#worksheet-grid > div');
+            const answerLine = firstProblem.querySelector('svg line[stroke="red"]');
+            if (!answerLine) throw new Error("Answer key line was not drawn or is not red.");
+          }
+        }
+      ];
+
+      window.addEventListener('error', async (e) => {
+      try {
+        await fetch('/api/test-results', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            timestamp: new Date().toISOString(),
+            allPassed: false,
+            results: [{ name: "Global Error", passed: false, error: e.message + " at " + e.filename + ":" + e.lineno }]
+          })
+        });
+      } catch(err){}
+    });
+    
+    function runTestSuite() {
+      // Async wrapper because DOMContentLoaded can't be async directly on older browsers, though it's fine.
+      async function run() {
+        const iframe = document.getElementById('app-frame');
+        const listContainer = document.getElementById('test-list');
+        const summaryBadge = document.getElementById('summary-badge');
+
+        listContainer.innerHTML = '';
+        
+        tests.forEach((t, idx) => {
+          const li = document.createElement('li');
+          li.id = `test-item-${idx}`;
+          li.className = "py-4 flex flex-col space-y-1";
+          li.innerHTML = `
+            <div class="flex items-center justify-between">
+              <span class="font-medium text-gray-700">${t.name}</span>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-500 uppercase">Pending</span>
+            </div>
+          `;
+          listContainer.appendChild(li);
+        });
+
+        const iframeElem = document.getElementById('app-frame');
+
+        // Wait for iframe scripts to load fully, max 10 seconds
+        let loaded = false;
+        for (let j = 0; j < 20; j++) {
+          if (iframeElem.contentWindow && iframeElem.contentWindow.state && iframeElem.contentWindow.katex) {
+            loaded = true;
+            break;
+          }
+          await new Promise(r => setTimeout(r, 500));
+        }
+
+        if (!loaded) {
+          console.error("Iframe failed to initialize state or katex within 10 seconds.");
+        }
+
+        const iframeWin = iframeElem.contentWindow;
+        const iframeDoc = iframeElem.contentDocument || iframeWin.document;
+        let allPassed = true;
+        const results = [];
+
+        // Check for global iframe errors
+        if (iframeWin.__pageError) {
+          results.push({ name: "Global Iframe Errors", passed: false, error: iframeWin.__pageError });
+          allPassed = false;
+        }
+
+        for (let i = 0; i < tests.length; i++) {
+          const t = tests[i];
+          const li = document.getElementById(`test-item-${i}`);
+          li.querySelector('span:last-child').className = "text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-800 uppercase animate-pulse";
+          li.querySelector('span:last-child').textContent = "Running";
+
+          try {
+            await t.fn(iframeWin, iframeDoc);
+            li.querySelector('span:last-child').className = "text-xs font-semibold px-2 py-0.5 rounded bg-green-100 text-green-800 uppercase";
+            li.querySelector('span:last-child').textContent = "Passed";
+            results.push({ name: t.name, passed: true });
+          } catch (err) {
+            allPassed = false;
+            li.querySelector('span:last-child').className = "text-xs font-semibold px-2 py-0.5 rounded bg-red-100 text-red-800 uppercase";
+            li.querySelector('span:last-child').textContent = "Failed";
+            const errorP = document.createElement('p');
+            errorP.className = "text-xs text-red-600 font-mono bg-red-50 p-2 rounded border border-red-100 mt-2";
+            errorP.textContent = err.message;
+            li.appendChild(errorP);
+            results.push({ name: t.name, passed: false, error: err.message });
+            // Reset
+            if (iframeWin.generateNew) {
+              try { iframeWin.generateNew(); } catch(e) {}
+            }
+          }
+        }
+
+        if (allPassed) {
+          summaryBadge.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 uppercase tracking-wide";
+          summaryBadge.textContent = "All Passed";
+        } else {
+          summaryBadge.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 uppercase tracking-wide";
+          summaryBadge.textContent = "Failed";
+        }
+
+        try {
+          await fetch('/api/test-results', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              timestamp: new Date().toISOString(),
+              allPassed: allPassed,
+              results: results
+            })
+          });
+        } catch (e) {
+          console.error("Failed to report results:", e);
+        }
+      }
+      run();
+    }
+
+    window.addEventListener('DOMContentLoaded', runTestSuite);
+    </script>
+</body>
+</html>

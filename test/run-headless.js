@@ -4,7 +4,10 @@ const { spawn } = require('child_process');
 const http = require('http');
 
 const CHROME_PATH = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const APP_URL = 'http://localhost:3000/test/integration.html';
+let APP_URL = 'http://localhost:3000/test/integration.html';
+if (process.argv[2]) {
+  APP_URL = process.argv[2];
+}
 const RESULTS_FILE = path.join(__dirname, '..', 'test-results.json');
 const TIMEOUT_MS = 25000; // 25 seconds timeout
 
@@ -37,13 +40,15 @@ req.on('error', (err) => {
 req.end();
 
 function launchChrome() {
-  // Spawn Headless Google Chrome
   const chromeProcess = spawn(CHROME_PATH, [
     '--headless=new',
     '--disable-gpu',
     '--no-sandbox',
     APP_URL
   ]);
+  
+  chromeProcess.stdout.on('data', data => console.log('CHROME STDOUT:', data.toString()));
+  chromeProcess.stderr.on('data', data => console.log('CHROME STDERR:', data.toString()));
 
   chromeProcess.on('error', (err) => {
     console.error("Failed to start Google Chrome process:", err.message);
