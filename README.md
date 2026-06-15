@@ -2,6 +2,8 @@
 
 A collection of lightweight, client-side web applications designed as educational tools.
 
+> **Note:** This project is an experiment in fully agentic coding using Google Antigravity. The code is intentionally generated entirely by Gemini AI, rather than being hand-coded, to build muscle memory and explore patterns for guiding AI in software development.
+
 Currently Hosted Applications:
 - **Pre-Algebra Solver**: An interactive tool for generating worksheets and solving multi-step linear equations.
 
