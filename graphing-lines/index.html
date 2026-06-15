@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Graphing & Lines - Kids School Helpers</title>
+  
+  <!-- Tailwind CSS via CDN -->
+  <!-- https://github.com/tailwindlabs/tailwindcss/releases/tag/v3.4.1 -->
+  <script src="https://cdn.tailwindcss.com?version=3.4.1"></script>
+  
+  <!-- KaTeX for rendering equations -->
+  <!-- https://github.com/KaTeX/KaTeX/releases/tag/v0.16.9 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+
+</head>
+<body class="bg-gray-50 min-h-screen text-gray-800 font-sans antialiased flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div>
+        <div class="flex items-center text-sm text-gray-500 mb-2 hover:text-indigo-600 transition-colors">
+          <a href="../index.html" class="flex items-center font-medium">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Back to Hub
+          </a>
+        </div>
+        <h1 class="text-2xl font-bold text-indigo-700 tracking-tight flex items-center">
+          <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+          Graphing & Lines
+        </h1>
+        <p class="text-sm text-gray-500 mt-1">Master coordinate planes, slope, and linear equations.</p>
+      </div>
+      
+      <!-- Mode Tabs -->
+      <nav class="flex space-x-1 bg-gray-100 p-1 rounded-lg self-stretch sm:self-auto" aria-label="Tabs">
+        <button id="btn-mode-interactive" class="mode-btn active bg-white text-indigo-700 shadow-sm rounded-md px-3 py-2 text-sm font-medium flex-1 text-center transition-all">
+          Graph Equation
+        </button>
+        <button id="btn-mode-determine" class="mode-btn text-gray-600 hover:text-gray-800 rounded-md px-3 py-2 text-sm font-medium flex-1 text-center transition-all">
+          Find Equation
+        </button>
+        <button id="btn-mode-worksheet" class="mode-btn text-gray-600 hover:text-gray-800 rounded-md px-3 py-2 text-sm font-medium flex-1 text-center transition-all">
+          Worksheet
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+
+    <!-- Lesson Toggle Button -->
+    <div class="mb-4 flex justify-end print:hidden">
+      <button id="btn-toggle-lesson" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center transition-colors">
+        <svg id="icon-lesson-open" class="w-4 h-4 mr-1 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+        <svg id="icon-lesson-closed" class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        <span id="text-lesson-toggle">Show Lesson: Coordinate Planes & Lines</span>
+      </button>
+    </div>
+
+    <!-- Teaching / Lesson Section -->
+    <section id="lesson-section" class="bg-indigo-50/50 rounded-xl shadow-sm border border-indigo-100 p-6 mb-8 hidden print:hidden overflow-hidden transition-all duration-300">
+      <div class="prose prose-indigo max-w-none">
+        <h2 class="text-xl font-bold text-indigo-800 mb-4 flex items-center">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+          Lesson: Coordinate Planes & Linear Equations
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-gray-700">
+          <div>
+            <h3 class="text-lg font-semibold text-indigo-700 mb-2">The Coordinate Plane</h3>
+            <p class="mb-3">A coordinate plane is formed by a horizontal number line (the <strong>x-axis</strong>) and a vertical number line (the <strong>y-axis</strong>). They intersect at the center, called the <strong>origin</strong> (0, 0).</p>
+            <p>Every point on this plane has two coordinates: (x, y). The <em>x-coordinate</em> tells you how far left or right to go, and the <em>y-coordinate</em> tells you how far up or down.</p>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-indigo-700 mb-2">Slope (Rise over Run)</h3>
+            <p class="mb-3">The slope of a line describes how steep it is. It's often written as the fraction <em>Rise / Run</em>.</p>
+            <ul class="list-disc pl-5 space-y-1">
+              <li><strong>Rise:</strong> The vertical change (up or down).</li>
+              <li><strong>Run:</strong> The horizontal change (always to the right).</li>
+            </ul>
+            <p class="mt-2 text-sm italic">Example: A slope of 2/3 means you go UP 2 units, and RIGHT 3 units to find the next point.</p>
+          </div>
+        </div>
+
+        <hr class="border-indigo-100 my-6">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-gray-700">
+          <div class="bg-white p-4 rounded-lg border border-gray-200">
+            <h3 class="text-lg font-semibold text-indigo-700 mb-2">Slope-Intercept Form</h3>
+            <div class="text-center bg-gray-50 py-2 rounded mb-3 text-lg font-mono font-medium tracking-wider">
+              y = <span class="text-blue-600">m</span>x + <span class="text-green-600">b</span>
+            </div>
+            <p class="mb-2">This is the easiest form to graph.</p>
+            <ul class="list-disc pl-5 space-y-1">
+              <li><strong class="text-green-600">b (y-intercept):</strong> Where the line crosses the y-axis. <strong>Graph this point first!</strong> (0, b)</li>
+              <li><strong class="text-blue-600">m (slope):</strong> Use the rise and run starting from the y-intercept to find the second point.</li>
+            </ul>
+          </div>
+          <div class="bg-white p-4 rounded-lg border border-gray-200">
+            <h3 class="text-lg font-semibold text-indigo-700 mb-2">Standard Form</h3>
+            <div class="text-center bg-gray-50 py-2 rounded mb-3 text-lg font-mono font-medium tracking-wider">
+              <span class="text-purple-600">A</span>x + <span class="text-orange-600">B</span>y = <span class="text-red-600">C</span>
+            </div>
+            <p class="mb-2">To graph this form, it's usually easiest to find the intercepts.</p>
+            <ul class="list-disc pl-5 space-y-1">
+              <li><strong>Find y-intercept:</strong> Plug in x = 0 and solve for y.</li>
+              <li><strong>Find slope:</strong> The slope is equal to -A / B. Use this slope from the y-intercept to find the second point.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Configuration Panel -->
+    <section id="config-panel" class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-8 print:hidden transition-all duration-300">
+      <div class="flex flex-col sm:flex-row gap-6 items-end">
+        <div class="flex-1 w-full">
+          <label for="config-equation-type" class="block text-sm font-medium text-gray-700 mb-1">Equation Form</label>
+          <select id="config-equation-type" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-gray-50 border p-2">
+            <option value="slope-intercept" selected>Slope-Intercept (y = mx + b)</option>
+            <option value="standard">Standard Form (Ax + By = C)</option>
+          </select>
+        </div>
+        
+        <div class="flex-1 w-full">
+          <label for="config-slope-type" class="block text-sm font-medium text-gray-700 mb-1">Slope Type</label>
+          <select id="config-slope-type" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-gray-50 border p-2">
+            <option value="integer" selected>Integer (e.g. y = 2x + 1)</option>
+            <option value="fraction">Fraction (e.g. y = 1/2x - 3)</option>
+            <option value="mixed">Mixed</option>
+          </select>
+        </div>
+
+        <div id="worksheet-type-container" class="flex-1 w-full hidden">
+          <label for="config-worksheet-type" class="block text-sm font-medium text-gray-700 mb-1">Problem Type</label>
+          <select id="config-worksheet-type" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-gray-50 border p-2">
+            <option value="graph" selected>Graph Equation</option>
+            <option value="find">Find Equation</option>
+          </select>
+        </div>
+
+        <div class="flex items-center space-x-4 mb-2">
+          <div class="flex items-center">
+            <input id="config-show-key" type="checkbox" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+            <label for="config-show-key" class="ml-2 block text-sm text-gray-700">Show Answer Key</label>
+          </div>
+        </div>
+
+        <div>
+          <button id="btn-generate" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center justify-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            Generate New
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Workspace Container -->
+    <div id="interactive-workspace" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      
+      <!-- Graph Canvas (Left Side - 2/3 width) -->
+      <section class="lg:col-span-2 flex flex-col">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex-grow flex flex-col items-center justify-center relative overflow-hidden">
+          
+          <!-- The Target Equation (When in "Graph Equation" Mode) -->
+          <div id="target-equation-container" class="mb-4 text-center">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Graph this Equation</h2>
+            <div id="target-equation-display" class="text-3xl sm:text-4xl text-indigo-900 font-medium py-2 px-6 bg-indigo-50 rounded-lg inline-block border border-indigo-100 min-h-[4rem] min-w-[12rem] flex items-center justify-center">
+              <!-- Equation will render here -->
+            </div>
+          </div>
+          
+          <!-- The Interactive SVG Graph -->
+          <div id="graph-container" class="relative w-full max-w-[600px] aspect-square rounded-lg border border-gray-300 bg-white shadow-inner select-none touch-none">
+            <!-- SVG will be injected here via JS -->
+          </div>
+          
+        </div>
+      </section>
+
+      <!-- Sidebar Controls (Right Side - 1/3 width) -->
+      <section class="lg:col-span-1 flex flex-col gap-6">
+        
+        <!-- Step Instructions / Input -->
+        <div class="bg-white rounded-xl shadow-sm border border-indigo-200 p-5 overflow-hidden relative">
+          <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+          
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-xs font-bold text-indigo-600 uppercase tracking-wider flex items-center">
+              <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              Current Objective
+            </h3>
+            <button id="btn-show-hint" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 px-2 py-1 rounded font-medium transition-colors flex items-center">
+              <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+              Hint (Tab)
+            </button>
+          </div>
+          
+          <div id="objective-text" class="text-gray-800 font-medium mb-4">
+            <!-- Dynamic objective text goes here -->
+            Identify the y-intercept. Click the correct point on the graph.
+          </div>
+
+          <!-- Input field for "Find Equation" mode -->
+          <div id="equation-input-container" class="hidden mt-4">
+            <input type="text" id="equation-input" class="w-full text-center text-xl font-mono p-3 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-indigo-50/50" placeholder="y = mx + b" autocomplete="off">
+            <p class="text-xs text-gray-500 mt-2 text-center">Type the equation that matches the graph.</p>
+          </div>
+        </div>
+
+        <!-- History / Plotted Points -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex-grow">
+          <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Plotted Points & Steps</h3>
+          <ul id="history-list" class="space-y-3">
+            <!-- History items will be populated here -->
+          </ul>
+        </div>
+
+      </section>
+    </div>
+
+    <!-- Worksheet Container (Hidden by default) -->
+    <div id="worksheet-workspace" class="hidden">
+      <!-- Worksheet grid will be generated here -->
+      <div id="worksheet-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+    </div>
+
+  </main>
+
+  <footer class="bg-white border-t border-gray-200 mt-auto print:hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center text-sm text-gray-500">
+      <span>&copy; Kids School Helpers</span>
+      <a href="../index.html" class="text-indigo-600 hover:text-indigo-800 font-medium">&larr; Back to Dashboard</a>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script type="module" src="js/app.js"></script>
+
+</body>
+</html>
