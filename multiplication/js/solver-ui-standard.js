@@ -8,12 +8,12 @@ let currentStepIndex = 0;
 
 export function initStandardSolver() {
     const btnGenerate = document.getElementById('btn-generate-standard');
-    if(btnGenerate) {
+    if (btnGenerate) {
         btnGenerate.addEventListener('click', startNewProblem);
     }
-    
+
     const input = document.getElementById('standard-step-input');
-    if(input) {
+    if (input) {
         input.addEventListener('keydown', handleInput);
         attachHintListener(input, () => currentProblem, () => currentStepIndex);
     }
@@ -30,27 +30,27 @@ function startNewProblem() {
     renderGrid();
     processAutoSteps();
     updateHint();
-    
+
     const input = document.getElementById('standard-step-input');
     input.value = '';
     input.disabled = false;
     input.focus();
-    
+
     document.getElementById('standard-step-error').classList.add('hidden');
 }
 
 function renderGrid() {
     const gridContainer = document.getElementById('standard-math-grid');
     gridContainer.innerHTML = '';
-    
+
     const totalCols = currentProblem.gridCols + 1;
-    
+
     // Create Table
     let html = `<table class="border-collapse mx-auto" style="table-layout: fixed;"><tbody>`;
 
     // Carries row
     html += `<tr>`;
-    for(let i=1; i<=totalCols; i++) {
+    for (let i = 1; i <= totalCols; i++) {
         html += `<td class="p-0 pb-1 align-bottom h-10 w-8" id="carry-col-${i}"><div class="flex flex-col-reverse items-center justify-start h-full gap-0"></div></td>`;
     }
     html += `</tr>`;
@@ -58,7 +58,7 @@ function renderGrid() {
     // Top Number
     html += `<tr>`;
     let topStartCol = totalCols - currentProblem.topStr.length + 1;
-    for(let i=1; i<=totalCols; i++) {
+    for (let i = 1; i <= totalCols; i++) {
         if (i >= topStartCol && i < topStartCol + currentProblem.topStr.length) {
             let idx = i - topStartCol;
             let text = currentProblem.topStr[idx];
@@ -77,12 +77,12 @@ function renderGrid() {
     let bottomStartCol = totalCols - currentProblem.bottomStr.length + 1;
     let signCol = Math.min(topStartCol, bottomStartCol) - 1;
     if (signCol < 1) signCol = 1;
-    
+
     let borderStartCol = Math.min(topStartCol, bottomStartCol);
 
-    for(let i=1; i<=totalCols; i++) {
+    for (let i = 1; i <= totalCols; i++) {
         let borderClass = (i >= borderStartCol) ? "border-b-2 border-gray-700" : "";
-        
+
         if (i === signCol) {
             html += `<td class="p-0 text-center align-middle h-10 w-8 text-2xl ${borderClass}">&times;</td>`;
         } else if (i >= bottomStartCol && i < bottomStartCol + currentProblem.bottomStr.length) {
@@ -99,9 +99,9 @@ function renderGrid() {
     html += `</tr>`;
 
     // Empty containers for partial products
-    for(let rowIdx=0; rowIdx<currentProblem.bottomStr.length; rowIdx++) {
+    for (let rowIdx = 0; rowIdx < currentProblem.bottomStr.length; rowIdx++) {
         html += `<tr id="pp-row-${rowIdx}">`;
-        for(let c=1; c<=totalCols; c++) {
+        for (let c = 1; c <= totalCols; c++) {
             html += `<td class="p-0 text-center align-middle h-10 w-8 text-xl text-blue-600 font-medium" id="pp-cell-${rowIdx}-${c}"></td>`;
         }
         html += `</tr>`;
@@ -110,7 +110,7 @@ function renderGrid() {
     if (currentProblem.bottomStr.length > 1) {
         // Addition carries row
         html += `<tr id="add-carry-row">`;
-        for(let c=1; c<=totalCols; c++) {
+        for (let c = 1; c <= totalCols; c++) {
             html += `<td class="p-0 text-center align-bottom h-4 w-8 text-xs text-red-500 font-bold" id="add-carry-cell-${c}"></td>`;
         }
         html += `</tr>`;
@@ -118,7 +118,7 @@ function renderGrid() {
 
     // Final sum containers
     html += `<tr id="final-row" style="display: none;">`;
-    for(let c=1; c<=totalCols; c++) {
+    for (let c = 1; c <= totalCols; c++) {
         let extraClass = "border-t-2 border-gray-700";
         html += `<td class="p-0 text-center align-middle h-10 w-8 text-2xl text-green-600 font-bold ${extraClass}" id="final-cell-${c}"></td>`;
     }
@@ -130,7 +130,7 @@ function renderGrid() {
 
 function processAutoSteps() {
     let step = currentProblem.steps[currentStepIndex];
-    while(step && step.type === 'strike_carries') {
+    while (step && step.type === 'strike_carries') {
         document.querySelectorAll('.carry-active').forEach(el => {
             el.classList.remove('carry-active');
             el.classList.add('strike-through', 'text-gray-400');
@@ -143,9 +143,9 @@ function processAutoSteps() {
 function updateHint() {
     const step = currentProblem.steps[currentStepIndex];
     const hintDiv = document.getElementById('standard-hint-content');
-    
+
     highlightActiveDigits(step);
-    
+
     if (!step) {
         hintDiv.innerHTML = `Great job! You solved it!`;
         return;
@@ -169,29 +169,29 @@ function handleInput(e) {
     if (e.key === 'Enter') {
         const val = e.target.value.trim();
         const step = currentProblem.steps[currentStepIndex];
-        
+
         if (val === step.expectedInput) {
             // Correct!
             document.getElementById('standard-step-error').classList.add('hidden');
-            
+
             // Adjust col indices by +1 because we added a column on the left
             if (step.type === 'multiply_digit' || step.type === 'multiply_digit_last') {
                 if (step.type === 'multiply_digit_last') {
                     // Populate full result spanning cells
-                    let resStr = step.fullResult; 
-                    let targetCol = step.targetCol + 1; 
+                    let resStr = step.fullResult;
+                    let targetCol = step.targetCol + 1;
                     for (let i = resStr.length - 1; i >= 0; i--) {
                         const cell = document.getElementById(`pp-cell-${step.rowIndex}-${targetCol}`);
-                        if(cell) cell.textContent = resStr[i];
+                        if (cell) cell.textContent = resStr[i];
                         targetCol--;
                     }
                 } else {
                     const cell = document.getElementById(`pp-cell-${step.rowIndex}-${step.targetCol + 1}`);
-                    if(cell) cell.textContent = step.resultDigit;
-                    
+                    if (cell) cell.textContent = step.resultDigit;
+
                     if (step.carryOut > 0 && step.carryCol) {
                         const carryContainer = document.getElementById(`carry-col-${step.carryCol + 1}`);
-                        if(carryContainer) {
+                        if (carryContainer) {
                             const carrySpan = document.createElement('span');
                             carrySpan.className = 'carry-digit carry-active carry-animate font-bold';
                             carrySpan.textContent = step.carryOut;
@@ -201,15 +201,15 @@ function handleInput(e) {
                 }
             } else if (step.type === 'add_placeholder') {
                 const cell = document.getElementById(`pp-cell-${step.rowIndex}-${step.targetCol + 1}`);
-                if(cell) cell.innerHTML = `<span class="placeholder-animate">${step.expectedInput}</span>`;
+                if (cell) cell.innerHTML = `<span class="placeholder-animate">${step.expectedInput}</span>`;
             } else if (step.type === 'final_add_digit') {
                 document.getElementById('final-row').style.display = 'table-row';
                 const cell = document.getElementById(`final-cell-${step.targetCol + 1}`);
-                if(cell) cell.textContent = step.resultDigit;
-                
+                if (cell) cell.textContent = step.resultDigit;
+
                 if (step.carryOut > 0 && step.carryCol) {
                     const carryCell = document.getElementById(`add-carry-cell-${step.carryCol + 1}`);
-                    if(carryCell) {
+                    if (carryCell) {
                         carryCell.textContent = step.carryOut;
                         carryCell.classList.add('carry-animate');
                     }
@@ -218,10 +218,10 @@ function handleInput(e) {
                 if (step.isSingleRow) {
                     // For single row, place the decimal in the first partial product row
                     const cell = document.getElementById(`pp-cell-0-${step.targetCol + 1}`);
-                    if(cell) cell.textContent += '.';
+                    if (cell) cell.textContent += '.';
                 } else {
                     const cell = document.getElementById(`final-cell-${step.targetCol + 1}`);
-                    if(cell) cell.textContent += '.';
+                    if (cell) cell.textContent += '.';
                 }
             }
 
@@ -229,7 +229,7 @@ function handleInput(e) {
             currentStepIndex++;
             processAutoSteps();
             updateHint();
-            
+
             if (currentStepIndex >= currentProblem.steps.length) {
                 e.target.disabled = true;
             }
@@ -246,12 +246,12 @@ function highlightActiveDigits(step) {
     document.querySelectorAll('.active-digit-highlight').forEach(el => {
         el.classList.remove('active-digit-highlight', 'bg-orange-200/75', 'rounded-md');
     });
-    
+
     if (!step || (step.type !== 'multiply_digit' && step.type !== 'multiply_digit_last')) return;
-    
+
     const topCell = document.getElementById(`top-digit-${step.topCol + 1}`);
     const bottomCell = document.getElementById(`bottom-digit-${step.bottomCol + 1}`);
-    
+
     if (topCell) {
         topCell.classList.add('active-digit-highlight', 'bg-orange-200/75', 'rounded-md');
     }

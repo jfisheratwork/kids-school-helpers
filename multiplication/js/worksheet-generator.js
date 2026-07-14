@@ -11,6 +11,19 @@ export function initWorksheetGenerator() {
     if(btnPrint) {
         btnPrint.addEventListener('click', () => window.print());
     }
+
+    const typeSelect = document.getElementById('ws-type');
+    if (typeSelect) {
+        typeSelect.addEventListener('change', () => {
+            if (typeSelect.value === 'standard') {
+                document.getElementById('ws-standard-options').classList.remove('hidden');
+                document.getElementById('ws-fraction-options').classList.add('hidden');
+            } else {
+                document.getElementById('ws-standard-options').classList.add('hidden');
+                document.getElementById('ws-fraction-options').classList.remove('hidden');
+            }
+        });
+    }
 }
 
 function generateWorksheet() {
@@ -32,8 +45,10 @@ function generateWorksheet() {
         let ansTex = '';
 
         if (type === 'standard') {
-            // Uses standard config from the other panel for now, or just defaults to 2x2.
-            const p = generateStandardProblem(2, 2, '0'); 
+            const topD = parseInt(document.getElementById('ws-top-digits').value);
+            const botD = parseInt(document.getElementById('ws-bottom-digits').value);
+            const dec = document.getElementById('ws-decimals').value;
+            const p = generateStandardProblem(topD, botD, dec); 
             tex = `\\begin{array}{r} ${p.displayTop} \\\\ \\times\\; ${p.displayBottom} \\\\ \\hline \\end{array}`;
             
             if (p.ppRows && p.ppRows.length > 1) {
@@ -43,7 +58,8 @@ function generateWorksheet() {
                 ansTex = `\\begin{array}{r} ${p.displayTop} \\\\ \\times\\; ${p.displayBottom} \\\\ \\hline ${p.finalProductDisplay} \\end{array}`;
             }
         } else {
-            const p = generateFractionProblem('proper');
+            const fracType = document.getElementById('ws-fraction-type').value;
+            const p = generateFractionProblem(fracType);
             tex = p.texInitial;
             const finalStep = p.steps[p.steps.length - 1];
             ansTex = `${p.texInitial} = ${finalStep.tex.replace('\\text{Simplify: } ', '')}`;

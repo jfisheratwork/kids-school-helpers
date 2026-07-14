@@ -130,15 +130,18 @@ function toggleWorkspaces() {
   const interactiveWp = document.getElementById('interactive-workspace');
   const worksheetWp = document.getElementById('worksheet-workspace');
   const worksheetTypeContainer = document.getElementById('worksheet-type-container');
+  const btnPrint = document.getElementById('btn-print-worksheet');
 
   if (state.currentMode === 'worksheet') {
     interactiveWp.classList.add('hidden');
     worksheetWp.classList.remove('hidden');
     worksheetTypeContainer.classList.remove('hidden');
+    if (btnPrint) btnPrint.classList.remove('hidden');
   } else {
     worksheetWp.classList.add('hidden');
     worksheetTypeContainer.classList.add('hidden');
     interactiveWp.classList.remove('hidden');
+    if (btnPrint) btnPrint.classList.add('hidden');
     
     // Toggle input field for determine mode
     const tgtEq = document.getElementById('target-equation-container');

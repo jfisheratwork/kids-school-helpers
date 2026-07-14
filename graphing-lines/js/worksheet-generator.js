@@ -3,16 +3,36 @@ import { generateEquation } from './generator.js';
 
 export function generateWorksheet() {
   const container = document.getElementById('worksheet-grid');
+  const keyContainer = document.getElementById('worksheet-key-grid');
+  const keyPage = document.getElementById('worksheet-key-page');
+  
   if (!container) return;
   
-  container.innerHTML = ''; // Clear previous
+  container.innerHTML = '';
+  if (keyContainer) keyContainer.innerHTML = '';
   
-  const numProblems = 6; // Standard 2x3 grid fits well on a page
+  const numProblems = 6;
   
   for (let i = 0; i < numProblems; i++) {
-    // Generate a new random equation for each problem
-    const eq = generateEquation(); // Note: this will also update state.currentEquation, which is fine since we are in worksheet mode
+    const eq = generateEquation();
     
+    // Main Worksheet Problem
+    container.appendChild(buildProblemCard(eq, i, false));
+    
+    // Answer Key Problem
+    if (keyContainer) {
+      keyContainer.appendChild(buildProblemCard(eq, i, true));
+    }
+  }
+  
+  if (state.config.showKey && keyPage) {
+    keyPage.classList.remove('hidden');
+  } else if (keyPage) {
+    keyPage.classList.add('hidden');
+  }
+}
+
+function buildProblemCard(eq, index, isKey) {
     const problemDiv = document.createElement('div');
     problemDiv.className = 'flex flex-col items-center bg-white p-4 border border-gray-200 rounded-lg shadow-sm print:shadow-none print:border-gray-400 print:break-inside-avoid';
     
@@ -22,23 +42,23 @@ export function generateWorksheet() {
     
     const probNum = document.createElement('span');
     probNum.className = 'font-bold text-gray-700';
-    probNum.textContent = `${i + 1}.`;
+    probNum.textContent = `${index + 1}.`;
     
     const eqDiv = document.createElement('div');
     eqDiv.className = 'text-xl flex-grow text-center font-medium';
     
-    // In "Find Equation" worksheet mode, we don't show the equation (unless it's the answer key)
-    if (state.config.worksheetType === 'graph' || state.config.showKey) {
-      window.MathRenderer.renderInline(eq.latex, eqDiv);
+    if (state.config.worksheetType === 'graph' || isKey) {
+        let span = document.createElement('span');
+        if (isKey && state.config.worksheetType === 'find') span.className = 'text-red-600 font-bold';
+        window.MathRenderer.renderInline(eq.latex, span);
+        eqDiv.appendChild(span);
     } else {
-      // Just an empty box or line for them to write on
-      eqDiv.innerHTML = '<span class="inline-block w-48 h-8 border-b-2 border-gray-400"></span>';
+        eqDiv.innerHTML = '<span class="inline-block w-48 h-8 border-b-2 border-gray-400"></span>';
     }
     
     headerDiv.appendChild(probNum);
     headerDiv.appendChild(eqDiv);
     
-    // Blank SVG Graph using DOMParser to avoid innerHTML vulnerability
     const svgHTML = generateStaticGridSVG();
     const parser = new DOMParser();
     const doc = parser.parseFromString(svgHTML, 'image/svg+xml');
@@ -48,8 +68,7 @@ export function generateWorksheet() {
     graphDiv.className = 'w-full aspect-square border border-gray-300';
     graphDiv.appendChild(svgNode);
     
-    // Draw the line if we are in "find" mode, OR if "showKey" is enabled for "graph" mode
-    const shouldDrawLine = (state.config.worksheetType === 'find') || (state.config.worksheetType === 'graph' && state.config.showKey);
+    const shouldDrawLine = (state.config.worksheetType === 'find') || (state.config.worksheetType === 'graph' && isKey);
     
     if (shouldDrawLine) {
       let mNum = 0, mDen = 1, b = 0;
@@ -77,9 +96,8 @@ export function generateWorksheet() {
       line.setAttribute("x2", sx2);
       line.setAttribute("y2", sy2);
       
-      // If it's the answer key for a graph problem, make it red. Otherwise, normal black line.
-      const isAnswerKey = state.config.worksheetType === 'graph' && state.config.showKey;
-      line.setAttribute("stroke", isAnswerKey ? "red" : "black");
+      const isRedLine = state.config.worksheetType === 'graph' && isKey;
+      line.setAttribute("stroke", isRedLine ? "red" : "black");
       line.setAttribute("stroke-width", "3");
       
       svgNode.appendChild(line);
@@ -88,8 +106,7 @@ export function generateWorksheet() {
     problemDiv.appendChild(headerDiv);
     problemDiv.appendChild(graphDiv);
     
-    container.appendChild(problemDiv);
-  }
+    return problemDiv;
 }
 
 function generateStaticGridSVG() {
@@ -106,6 +123,27 @@ function generateStaticGridSVG() {
     
     lines += `<line x1="${pos}" y1="0" x2="${pos}" y2="${SVG_SIZE}" stroke="${isAxis ? '#000' : '#e5e7eb'}" stroke-width="${isAxis ? '2' : '1'}" />`;
     lines += `<line x1="0" y1="${pos}" x2="${SVG_SIZE}" y2="${pos}" stroke="${isAxis ? '#000' : '#e5e7eb'}" stroke-width="${isAxis ? '2' : '1'}" />`;
+  }
+  
+  // Tick Marks & Labels
+  for (let i = -GRID_SIZE; i <= GRID_SIZE; i++) {
+    if (i === 0) continue;
+    
+    // X-axis
+    const xPos = ORIGIN + (i * STEP);
+    lines += `<line x1="${xPos}" y1="${ORIGIN - 4}" x2="${xPos}" y2="${ORIGIN + 4}" stroke="#000" stroke-width="2" />`;
+    
+    if (i % 2 === 0) {
+      lines += `<text x="${xPos}" y="${ORIGIN + 16}" text-anchor="middle" font-size="12" font-family="sans-serif" fill="#6b7280">${i}</text>`;
+    }
+    
+    // Y-axis
+    const yPos = ORIGIN - (i * STEP);
+    lines += `<line x1="${ORIGIN - 4}" y1="${yPos}" x2="${ORIGIN + 4}" y2="${yPos}" stroke="#000" stroke-width="2" />`;
+    
+    if (i % 2 === 0) {
+      lines += `<text x="${ORIGIN - 8}" y="${yPos + 4}" text-anchor="end" font-size="12" font-family="sans-serif" fill="#6b7280">${i}</text>`;
+    }
   }
   
   return `<svg viewBox="0 0 ${SVG_SIZE} ${SVG_SIZE}" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">${lines}</svg>`;
