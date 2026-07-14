@@ -1,0 +1,100 @@
+/* Custom styles for the mathematical grid */
+
+/* Allows for vertical alignment in the standard multiplication algorithm */
+.math-grid {
+    display: grid;
+    grid-template-columns: repeat(10, minmax(1.5rem, 1fr)); /* arbitrary large number of columns to hold digits */
+    justify-content: end;
+    gap: 0.2rem;
+}
+
+.math-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 2rem;
+    height: 2.5rem;
+}
+
+.math-row {
+    display: contents; /* Allows children to participate in the parent grid */
+}
+
+.math-line {
+    grid-column: 1 / -1;
+    border-bottom: 2px solid #374151; /* gray-700 */
+    margin: 0.25rem 0;
+}
+
+.highlighted-cell {
+    background-color: #fef08a; /* yellow-200 */
+    border-radius: 0.25rem;
+    transition: background-color 0.3s;
+}
+
+.carry-digit {
+    font-size: 1rem;
+    color: #ef4444; /* red-500 */
+}
+
+@keyframes carryIn {
+    0% { transform: translateY(50%); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+.carry-animate {
+    animation: carryIn 0.4s ease-out forwards;
+}
+
+.strike-through {
+    position: relative;
+}
+.strike-through::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 5%;
+    height: 2px;
+    background-color: #991b1b;
+    transform: rotate(-15deg);
+    animation: strike 0.3s ease-out forwards;
+}
+
+@keyframes strike {
+    0% { width: 0; opacity: 0; }
+    100% { width: 90%; opacity: 1; }
+}
+
+@keyframes dropIn {
+    0% { transform: translateY(-50%); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+.placeholder-animate {
+    animation: dropIn 0.4s ease-out forwards;
+    color: #9ca3af; /* gray-400 */
+}
+
+/* Printing styles for worksheet generator */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    body {
+        background-color: white;
+    }
+
+    main {
+        margin: 0;
+        padding: 0;
+        max-width: none;
+    }
+    
+    .worksheet-page {
+        box-shadow: none;
+        border: none;
+        padding: 0;
+        page-break-after: always;
+    }
+}
