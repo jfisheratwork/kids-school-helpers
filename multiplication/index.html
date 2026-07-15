@@ -225,6 +225,7 @@
                         <select id="ws-type" class="w-full border border-gray-300 rounded-md p-2 focus:ring-primary focus:border-primary">
                             <option value="standard" selected>Standard & Decimals</option>
                             <option value="fractions">Fractions</option>
+                            <option value="timestables">Times Tables</option>
                         </select>
                     </div>
                     <div class="w-full md:w-64">
@@ -280,6 +281,17 @@
                         <select id="ws-fraction-type" class="w-full border border-gray-300 rounded-md p-2 focus:ring-primary focus:border-primary">
                             <option value="proper" selected>Proper Fractions (e.g. 1/2)</option>
                             <option value="mixed">Mixed & Improper (e.g. 1 1/2)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Times Tables Specific Options -->
+                <div id="ws-timestables-options" class="flex flex-col md:flex-row md:items-center gap-6 mb-6 hidden">
+                    <div class="w-full md:w-64">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Print Mode</label>
+                        <select id="ws-timestables-mode" class="w-full border border-gray-300 rounded-md p-2 focus:ring-primary focus:border-primary">
+                            <option value="quiz" selected>Randomized Quiz</option>
+                            <option value="reference">Reference Tables (1-12)</option>
                         </select>
                     </div>
                 </div>

@@ -1,5 +1,6 @@
 import { generateStandardProblem } from './generator-standard.js';
 import { generateFractionProblem } from './generator-fractions.js';
+import { generateTimesTableQuizProblem, generateReferenceTables } from './generator-timestables.js';
 
 export function initWorksheetGenerator() {
     const btnGenerate = document.getElementById('btn-generate-sheet');
@@ -15,12 +16,16 @@ export function initWorksheetGenerator() {
     const typeSelect = document.getElementById('ws-type');
     if (typeSelect) {
         typeSelect.addEventListener('change', () => {
+            document.getElementById('ws-standard-options').classList.add('hidden');
+            document.getElementById('ws-fraction-options').classList.add('hidden');
+            document.getElementById('ws-timestables-options').classList.add('hidden');
+            
             if (typeSelect.value === 'standard') {
                 document.getElementById('ws-standard-options').classList.remove('hidden');
-                document.getElementById('ws-fraction-options').classList.add('hidden');
-            } else {
-                document.getElementById('ws-standard-options').classList.add('hidden');
+            } else if (typeSelect.value === 'fractions') {
                 document.getElementById('ws-fraction-options').classList.remove('hidden');
+            } else if (typeSelect.value === 'timestables') {
+                document.getElementById('ws-timestables-options').classList.remove('hidden');
             }
         });
     }
@@ -40,6 +45,35 @@ function generateWorksheet() {
     grid.innerHTML = '';
     keyGrid.innerHTML = '';
 
+    if (type === 'timestables' && document.getElementById('ws-timestables-mode').value === 'reference') {
+        // Render 1-12 Reference Tables
+        const tables = generateReferenceTables();
+        
+        // We will inject a beautiful 4-column grid
+        grid.className = "grid grid-cols-4 gap-x-4 gap-y-12 text-sm";
+        keyGrid.className = "grid grid-cols-4 gap-x-4 gap-y-12 text-sm";
+        
+        for(let i = 0; i < tables.length; i++) {
+            const div = document.createElement('div');
+            div.className = "flex justify-center";
+            grid.appendChild(div);
+            
+            if (window.katex) {
+                katex.render(tables[i], div, { throwOnError: false, displayMode: true });
+            }
+        }
+        
+        // Answer key doesn't make sense for reference tables, so we hide it
+        doc.classList.remove('hidden');
+        btnPrint.classList.remove('hidden');
+        keyPage.classList.add('hidden');
+        return;
+    }
+
+    // Reset grid layout for standard problems
+    grid.className = "grid grid-cols-2 gap-x-8 gap-y-10";
+    keyGrid.className = "grid grid-cols-2 gap-x-8 gap-y-6";
+
     for(let i = 1; i <= count; i++) {
         let tex = '';
         let ansTex = '';
@@ -57,12 +91,16 @@ function generateWorksheet() {
             } else {
                 ansTex = `\\begin{array}{r} ${p.displayTop} \\\\ \\times\\; ${p.displayBottom} \\\\ \\hline ${p.finalProductDisplay} \\end{array}`;
             }
-        } else {
+        } else if (type === 'fractions') {
             const fracType = document.getElementById('ws-fraction-type').value;
             const p = generateFractionProblem(fracType);
             tex = p.texInitial;
             const finalStep = p.steps[p.steps.length - 1];
             ansTex = `${p.texInitial} = ${finalStep.tex.replace('\\text{Simplify: } ', '')}`;
+        } else if (type === 'timestables') {
+            const p = generateTimesTableQuizProblem();
+            tex = p.texInitial;
+            ansTex = p.texAnswer;
         }
 
         // Add to main worksheet
