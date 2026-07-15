@@ -25,22 +25,29 @@ export function generateWorksheet() {
 
   for (let p = 0; p < numProblemPages; p++) {
     const pageDiv = document.createElement('div');
-    pageDiv.className = 'worksheet-page bg-white rounded-xl shadow-sm border border-gray-200 p-8 mx-auto font-sans relative';
+    pageDiv.className = 'worksheet-page print:break-after-page relative pb-10 p-8';
     
     // Header
     const header = document.createElement('div');
-    header.className = 'border-b-2 border-gray-900 pb-4 mb-6 flex justify-between items-end';
-    header.innerHTML = `
-      <div>
-          <h2 class="text-2xl font-bold text-gray-900">Pre-Algebra Worksheet</h2>
-          <p class="text-xs text-gray-500 mt-1">Topic: Multi-Step Linear Equations (Page ${p + 1} of ${numProblemPages})</p>
-      </div>
-      <div class="text-right text-sm text-gray-700 space-y-1">
-          <p>Name: ________________________</p>
-          <p>Date: ________________________</p>
-      </div>
-    `;
-    pageDiv.appendChild(header);
+    let headerHtml = '';
+    if (p === 0) {
+        headerHtml = `
+            <div class="border-b-2 border-gray-900 pb-4 mb-6 flex justify-between items-end">
+                <div><h2 class="text-2xl font-bold text-gray-900">Pre-Algebra Practice</h2></div>
+                <div class="text-right text-sm text-gray-700 space-y-1">
+                    <p>Name: ________________________</p>
+                    <p>Date: ________________________</p>
+                </div>
+            </div>
+        `;
+    } else {
+        headerHtml = `
+            <div class="border-b-2 border-gray-900 pb-4 mb-6">
+                <h2 class="text-xl font-bold text-gray-900">Pre-Algebra Practice (Page ${p + 1})</h2>
+            </div>
+        `;
+    }
+    pageDiv.innerHTML = headerHtml;
 
     // Grid
     const grid = document.createElement('div');
@@ -78,19 +85,19 @@ export function generateWorksheet() {
 
   for (let p = 0; p < numAnswerPages; p++) {
     const pageDiv = document.createElement('div');
-    pageDiv.className = 'worksheet-page worksheet-key-page bg-white rounded-xl shadow-sm border border-gray-200 p-8 mx-auto font-sans relative';
+    pageDiv.className = 'worksheet-page worksheet-key-page relative pt-10 p-8';
+    if (p < numAnswerPages - 1) {
+        pageDiv.classList.add('print:break-after-page');
+    }
     pageDiv.id = p === 0 ? 'worksheet-key-page-first' : ''; // Use for toggling visibility of all keys
     
     // Header
-    const header = document.createElement('div');
-    header.className = 'border-b-2 border-gray-900 pb-4 mb-6 flex justify-between items-end';
-    header.innerHTML = `
-      <div>
-          <h2 class="text-2xl font-bold text-gray-900">Pre-Algebra Answer Key</h2>
-          <p class="text-xs text-gray-500 mt-1">Topic: Multi-Step Linear Equations (Page ${p + 1} of ${numAnswerPages})</p>
-      </div>
+    const headerHtml = `
+        <div class="border-b-2 border-gray-900 pb-4 mb-6">
+            <h2 class="text-2xl font-bold text-gray-900">Answer Key (Page ${p + 1})</h2>
+        </div>
     `;
-    pageDiv.appendChild(header);
+    pageDiv.innerHTML = headerHtml;
 
     // Grid
     const keyGrid = document.createElement('div');

@@ -36,44 +36,41 @@ function generateWorksheet() {
     const count = parseInt(document.getElementById('ws-count').value);
     const includeKey = document.getElementById('ws-key').checked;
 
-    const grid = document.getElementById('worksheet-grid');
-    const keyGrid = document.getElementById('worksheet-key-grid');
     const doc = document.getElementById('worksheet-document');
-    const keyPage = document.getElementById('worksheet-key-page');
     const btnPrint = document.getElementById('btn-print-sheet');
 
-    grid.innerHTML = '';
-    keyGrid.innerHTML = '';
+    doc.innerHTML = '';
 
     if (type === 'timestables' && document.getElementById('ws-timestables-mode').value === 'reference') {
         // Render 1-12 Reference Tables
         const tables = generateReferenceTables();
         
-        // We will inject a beautiful 4-column grid
-        grid.className = "grid grid-cols-4 gap-x-4 gap-y-12 text-sm";
-        keyGrid.className = "grid grid-cols-4 gap-x-4 gap-y-12 text-sm";
+        const pageDiv = document.createElement('div');
+        pageDiv.className = "worksheet-page relative pb-10 p-8";
+        pageDiv.innerHTML = `
+            <div class="border-b-2 border-gray-900 pb-4 mb-6 flex justify-between items-end">
+                <div><h2 class="text-2xl font-bold text-gray-900">Multiplication Tables (1-12)</h2></div>
+            </div>
+            <div class="grid grid-cols-4 gap-x-4 gap-y-12 text-sm" id="ref-tables-grid"></div>
+        `;
+        doc.appendChild(pageDiv);
         
+        const grid = pageDiv.querySelector('#ref-tables-grid');
         for(let i = 0; i < tables.length; i++) {
             const div = document.createElement('div');
             div.className = "flex justify-center";
             grid.appendChild(div);
-            
             if (window.katex) {
                 katex.render(tables[i], div, { throwOnError: false, displayMode: true });
             }
         }
         
-        // Answer key doesn't make sense for reference tables, so we hide it
         doc.classList.remove('hidden');
         btnPrint.classList.remove('hidden');
-        keyPage.classList.add('hidden');
         return;
     }
 
-    // Reset grid layout for standard problems
-    grid.className = "grid grid-cols-2 gap-x-8 gap-y-10";
-    keyGrid.className = "grid grid-cols-2 gap-x-8 gap-y-6";
-
+    const problems = [];
     for(let i = 1; i <= count; i++) {
         let tex = '';
         let ansTex = '';
@@ -102,31 +99,115 @@ function generateWorksheet() {
             tex = p.texInitial;
             ansTex = p.texAnswer;
         }
+        
+        problems.push({ tex, ansTex });
+    }
 
-        // Add to main worksheet
-        const div = document.createElement('div');
-        div.className = "flex items-start space-x-4";
-        div.innerHTML = `<span class="font-bold text-gray-500">${i}.</span> <div class="text-2xl" id="ws-prob-${i}"></div>`;
-        grid.appendChild(div);
+    // Pagination logic
+    const PROBLEMS_PER_PAGE = type === 'standard' ? 12 : 16;
+    const numPages = Math.ceil(count / PROBLEMS_PER_PAGE);
+
+    const typeName = document.getElementById('ws-type').options[document.getElementById('ws-type').selectedIndex].text;
+
+    // Generate Worksheet Pages
+    for (let page = 0; page < numPages; page++) {
+        const pageDiv = document.createElement('div');
+        pageDiv.className = "worksheet-page print:break-after-page relative pb-10 p-8";
         
-        // Add to answer key
-        const keyDiv = document.createElement('div');
-        keyDiv.className = "flex items-start space-x-4";
-        keyDiv.innerHTML = `<span class="font-bold text-gray-500">${i}.</span> <div class="text-xl text-blue-700" id="ws-ans-${i}"></div>`;
-        keyGrid.appendChild(keyDiv);
+        let headerHtml = '';
+        if (page === 0) {
+            headerHtml = `
+                <div class="border-b-2 border-gray-900 pb-4 mb-6 flex justify-between items-end">
+                    <div><h2 class="text-2xl font-bold text-gray-900">Multiplication Practice: ${typeName}</h2></div>
+                    <div class="text-right text-sm text-gray-700 space-y-1">
+                        <p>Name: ________________________</p>
+                        <p>Date: ________________________</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            headerHtml = `
+                <div class="border-b-2 border-gray-900 pb-4 mb-6">
+                    <h2 class="text-xl font-bold text-gray-900">Multiplication Practice: ${typeName} (Page ${page + 1})</h2>
+                </div>
+            `;
+        }
         
-        if (window.katex) {
-            katex.render(tex, div.querySelector(`#ws-prob-${i}`), { throwOnError: false, displayMode: true });
-            katex.render(ansTex, keyDiv.querySelector(`#ws-ans-${i}`), { throwOnError: false, displayMode: true });
+        const gridDiv = document.createElement('div');
+        gridDiv.className = "grid grid-cols-2 gap-x-8 gap-y-12";
+        
+        const startIndex = page * PROBLEMS_PER_PAGE;
+        const endIndex = Math.min(startIndex + PROBLEMS_PER_PAGE, count);
+        
+        for (let i = startIndex; i < endIndex; i++) {
+            const probNum = i + 1;
+            
+            const div = document.createElement('div');
+            div.className = "flex items-start space-x-4 mb-4";
+            div.innerHTML = `
+                <div class="font-bold text-gray-500">${probNum}.</div>
+                <div class="text-2xl font-medium px-4" id="ws-prob-tex-${probNum}"></div>
+            `;
+            gridDiv.appendChild(div);
+        }
+        
+        pageDiv.innerHTML = headerHtml;
+        pageDiv.appendChild(gridDiv);
+        doc.appendChild(pageDiv);
+        
+        for (let i = startIndex; i < endIndex; i++) {
+            const probNum = i + 1;
+            const p = problems[i];
+            const eqDiv = pageDiv.querySelector(`#ws-prob-tex-${probNum}`);
+            if (window.katex) katex.render(p.tex, eqDiv, { throwOnError: false, displayMode: true });
+        }
+    }
+
+    // Generate Answer Key Pages
+    if (includeKey) {
+        for (let page = 0; page < numPages; page++) {
+            const pageDiv = document.createElement('div');
+            pageDiv.className = "worksheet-page relative pt-10 p-8";
+            if (page < numPages - 1) {
+                pageDiv.classList.add('print:break-after-page');
+            }
+            
+            pageDiv.innerHTML = `
+                <div class="border-b-2 border-gray-900 pb-4 mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">Answer Key (Page ${page + 1})</h2>
+                </div>
+            `;
+            
+            const gridDiv = document.createElement('div');
+            gridDiv.className = "grid grid-cols-2 gap-x-8 gap-y-12";
+            
+            const startIndex = page * PROBLEMS_PER_PAGE;
+            const endIndex = Math.min(startIndex + PROBLEMS_PER_PAGE, count);
+            
+            for (let i = startIndex; i < endIndex; i++) {
+                const probNum = i + 1;
+                
+                const keyDiv = document.createElement('div');
+                keyDiv.className = "flex items-start space-x-4 mb-4";
+                keyDiv.innerHTML = `
+                    <div class="font-bold text-gray-500">${probNum}.</div>
+                    <div class="text-xl font-medium text-blue-700" id="ws-ans-tex-${probNum}"></div>
+                `;
+                gridDiv.appendChild(keyDiv);
+            }
+            
+            pageDiv.appendChild(gridDiv);
+            doc.appendChild(pageDiv);
+            
+            for (let i = startIndex; i < endIndex; i++) {
+                const probNum = i + 1;
+                const p = problems[i];
+                const keyEq = pageDiv.querySelector(`#ws-ans-tex-${probNum}`);
+                if (window.katex) katex.render(p.ansTex, keyEq, { throwOnError: false, displayMode: true });
+            }
         }
     }
 
     doc.classList.remove('hidden');
     btnPrint.classList.remove('hidden');
-
-    if (includeKey) {
-        keyPage.classList.remove('hidden');
-    } else {
-        keyPage.classList.add('hidden');
-    }
 }

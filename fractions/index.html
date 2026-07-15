@@ -145,6 +145,16 @@
                             <option value="mixed">Mixed / Improper</option>
                         </select>
                     </div>
+                    <div class="w-full md:w-48">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Number of Problems</label>
+                        <select id="ws-num-problems" class="w-full border border-gray-300 rounded-md p-2 focus:ring-primary focus:border-primary">
+                            <option value="5">5</option>
+                            <option value="10" selected>10 (1 Page)</option>
+                            <option value="15">15</option>
+                            <option value="20">20 (2 Pages)</option>
+                            <option value="30">30 (3 Pages)</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="flex items-center gap-4 pt-4 border-t border-gray-100">
                     <button id="btn-generate-worksheet" class="bg-primary text-white font-semibold py-2.5 px-6 rounded-md hover:bg-secondary transition shadow-sm">
@@ -156,17 +166,9 @@
                 </div>
             </div>
             
-            <!-- Worksheet Grid -->
-            <div id="worksheet-grid" class="grid grid-cols-2 gap-x-8 gap-y-12 bg-white p-8 rounded-lg shadow-sm print:shadow-none print:p-0 min-h-[500px]">
-                <!-- Populated by JS -->
-            </div>
-            
-            <!-- Answer Key (Print Only) -->
-            <div id="worksheet-key-page" class="hidden mt-16 print:block print:break-before-page">
-                <h2 class="text-2xl font-bold text-gray-800 mb-8 border-b-2 border-gray-800 pb-2">Adding Fractions Answer Key</h2>
-                <div id="worksheet-key-grid" class="grid grid-cols-2 gap-x-12 gap-y-16">
-                    <!-- Answer key items will be generated here -->
-                </div>
+            <!-- Printable Worksheet Document Wrapper -->
+            <div id="worksheet-document" class="space-y-8 bg-white border shadow-sm print:shadow-none print:border-none min-h-[10.5in]">
+                <!-- Document pages injected dynamically -->
             </div>
         </div>
 

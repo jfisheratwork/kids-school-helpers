@@ -2,34 +2,70 @@ import { state } from './state.js';
 import { generateEquation } from './generator.js';
 
 export function generateWorksheet() {
-  const container = document.getElementById('worksheet-grid');
-  const keyContainer = document.getElementById('worksheet-key-grid');
-  const keyPage = document.getElementById('worksheet-key-page');
+  const doc = document.getElementById('worksheet-document');
+  const btnPrint = document.getElementById('btn-print-worksheet');
   
-  if (!container) return;
+  if (!doc) return;
   
-  container.innerHTML = '';
-  if (keyContainer) keyContainer.innerHTML = '';
+  doc.innerHTML = '';
   
   const numProblems = 6;
+  const problems = [];
   
   for (let i = 0; i < numProblems; i++) {
     const eq = generateEquation();
-    
-    // Main Worksheet Problem
-    container.appendChild(buildProblemCard(eq, i, false));
-    
-    // Answer Key Problem
-    if (keyContainer) {
-      keyContainer.appendChild(buildProblemCard(eq, i, true));
-    }
+    problems.push(eq);
   }
   
-  if (state.config.showKey && keyPage) {
-    keyPage.classList.remove('hidden');
-  } else if (keyPage) {
-    keyPage.classList.add('hidden');
+  const typeName = state.config.worksheetType === 'graph' ? 'Graphing Equations' : 'Finding Equations';
+
+  // Generate Worksheet Pages
+  const pageDiv = document.createElement('div');
+  pageDiv.className = "worksheet-page print:break-after-page relative pb-10 p-8";
+  
+  pageDiv.innerHTML = `
+      <div class="border-b-2 border-gray-900 pb-4 mb-6 flex justify-between items-end">
+          <div><h2 class="text-2xl font-bold text-gray-900">Lines Practice: ${typeName}</h2></div>
+          <div class="text-right text-sm text-gray-700 space-y-1">
+              <p>Name: ________________________</p>
+              <p>Date: ________________________</p>
+          </div>
+      </div>
+  `;
+  
+  const gridDiv = document.createElement('div');
+  gridDiv.className = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8";
+  
+  for (let i = 0; i < numProblems; i++) {
+      gridDiv.appendChild(buildProblemCard(problems[i], i, false));
   }
+  
+  pageDiv.appendChild(gridDiv);
+  doc.appendChild(pageDiv);
+  
+  // Generate Answer Key Pages
+  if (state.config.showKey) {
+      const keyPageDiv = document.createElement('div');
+      keyPageDiv.className = "worksheet-page relative pt-10 p-8";
+      
+      keyPageDiv.innerHTML = `
+          <div class="border-b-2 border-gray-900 pb-4 mb-6">
+              <h2 class="text-2xl font-bold text-gray-900">Answer Key</h2>
+          </div>
+      `;
+      
+      const keyGridDiv = document.createElement('div');
+      keyGridDiv.className = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8";
+      
+      for (let i = 0; i < numProblems; i++) {
+          keyGridDiv.appendChild(buildProblemCard(problems[i], i, true));
+      }
+      
+      keyPageDiv.appendChild(keyGridDiv);
+      doc.appendChild(keyPageDiv);
+  }
+  
+  if (btnPrint) btnPrint.classList.remove('hidden');
 }
 
 function buildProblemCard(eq, index, isKey) {

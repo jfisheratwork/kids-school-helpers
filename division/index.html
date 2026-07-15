@@ -295,32 +295,8 @@
             </div>
 
             <!-- Printable Worksheet Document Wrapper -->
-            <div id="worksheet-document" class="space-y-8 hidden">
-                <!-- Page 1: Problems Worksheet -->
-                <div class="worksheet-page bg-white rounded-xl shadow-sm border border-gray-200 p-8 mx-auto font-sans relative" style="min-height: 10in;">
-                    <div class="border-b-2 border-gray-900 pb-4 mb-6 flex justify-between items-end">
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-900">Division Worksheet</h2>
-                        </div>
-                        <div class="text-right text-sm text-gray-700 space-y-1">
-                            <p>Name: ________________________</p>
-                            <p>Date: ________________________</p>
-                        </div>
-                    </div>
-                    <div id="worksheet-grid" class="grid grid-cols-2 gap-x-8 gap-y-10">
-                        <!-- Dynamic cells injected here -->
-                    </div>
-                </div>
-
-                <!-- Page 2: Answer Key Worksheet -->
-                <div id="worksheet-key-page" class="worksheet-page bg-white rounded-xl shadow-sm border border-gray-200 p-8 mx-auto font-sans relative hidden">
-                    <div class="border-b-2 border-gray-900 pb-4 mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900">Division Answer Key</h2>
-                    </div>
-                    <div id="worksheet-key-grid" class="grid grid-cols-2 gap-x-8 gap-y-6">
-                        <!-- Dynamic answers injected here -->
-                    </div>
-                </div>
+            <div id="worksheet-document" class="space-y-8 bg-white border shadow-sm print:shadow-none print:border-none min-h-[10.5in]">
+                <!-- Document pages injected dynamically -->
             </div>
         </div>
 

@@ -253,40 +253,8 @@
             </div>
 
             <!-- Printable Worksheet Document Wrapper -->
-            <div id="worksheet-document" class="space-y-8">
-                <!-- Page 1: Problems Worksheet -->
-                <div class="worksheet-page bg-white rounded-xl shadow-sm border border-gray-200 p-8 mx-auto font-sans relative">
-                    <!-- School Header -->
-                    <div class="border-b-2 border-gray-900 pb-4 mb-6 flex justify-between items-end">
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-900">Pre-Algebra Worksheet</h2>
-                            <p class="text-xs text-gray-500 mt-1">Topic: Multi-Step Linear Equations</p>
-                        </div>
-                        <div class="text-right text-sm text-gray-700 space-y-1">
-                            <p>Name: ________________________</p>
-                            <p>Date: ________________________</p>
-                        </div>
-                    </div>
-
-                    <!-- Equations Grid -->
-                    <div id="worksheet-grid" class="grid grid-cols-2 gap-x-8 gap-y-10 min-h-[7.5in]">
-                        <!-- Dynamic cells injected here -->
-                    </div>
-                </div>
-
-                <!-- Page 2: Answer Key Worksheet -->
-                <div id="worksheet-key-page" class="worksheet-page bg-white rounded-xl shadow-sm border border-gray-200 p-8 mx-auto font-sans relative">
-                    <!-- School Header -->
-                    <div class="border-b-2 border-gray-900 pb-4 mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900">Pre-Algebra Worksheet - Answer Key</h2>
-                        <p class="text-xs text-gray-500 mt-1">Topic: Multi-Step Linear Equations (Solutions)</p>
-                    </div>
-
-                    <!-- Answers Grid -->
-                    <div id="worksheet-key-grid" class="grid grid-cols-2 gap-x-8 gap-y-6">
-                        <!-- Dynamic answers injected here -->
-                    </div>
-                </div>
+            <div id="worksheet-document" class="space-y-8 bg-white border shadow-sm print:shadow-none print:border-none min-h-[10.5in]">
+                <!-- Document pages injected dynamically -->
             </div>
         </div>
 

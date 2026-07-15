@@ -230,16 +230,10 @@
 
     <!-- Worksheet Container (Hidden by default) -->
     <div id="worksheet-workspace" class="hidden">
-      <!-- Worksheet grid will be generated here -->
-      <div id="worksheet-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
-      
-      <!-- Answer Key (Print Only) -->
-      <div id="worksheet-key-page" class="hidden mt-16 print:block print:break-before-page">
-          <h2 class="text-2xl font-bold text-gray-800 mb-8 border-b-2 border-gray-800 pb-2">Graphing & Lines Answer Key</h2>
-          <div id="worksheet-key-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              <!-- Answer key items will be generated here -->
-          </div>
-      </div>
+        <!-- Printable Worksheet Document Wrapper -->
+        <div id="worksheet-document" class="space-y-8 bg-white border shadow-sm print:shadow-none print:border-none min-h-[10.5in]">
+            <!-- Document pages injected dynamically -->
+        </div>
     </div>
 
   </main>
