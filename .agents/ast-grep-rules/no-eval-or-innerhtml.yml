@@ -1,0 +1,13 @@
+id: no-eval-or-innerhtml
+message: 'Avoid using eval() or direct innerHTML assignment; prefer safer DOM manipulation, textContent, or dedicated renderers.'
+severity: warning
+language: javascript
+rule:
+    any:
+        - pattern: eval($$$ARGS)
+        - all:
+              - pattern: $OBJ.innerHTML = $VAL
+              - not:
+                    any:
+                        - pattern: $OBJ.innerHTML = ''
+                        - pattern: $OBJ.innerHTML = ""

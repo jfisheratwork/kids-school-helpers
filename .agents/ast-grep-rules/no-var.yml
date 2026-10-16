@@ -1,0 +1,6 @@
+id: no-var
+message: 'Avoid using "var" in modern ES6+ code. Use "const" or "let" instead.'
+severity: error
+language: javascript
+rule:
+    pattern: var $NAME = $VAL

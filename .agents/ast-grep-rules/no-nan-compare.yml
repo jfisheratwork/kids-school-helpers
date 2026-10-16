@@ -1,0 +1,10 @@
+id: no-nan-compare
+message: 'Comparing directly with NaN always returns false in JavaScript. Use Number.isNaN() or isNaN() instead.'
+severity: error
+language: javascript
+rule:
+    any:
+        - pattern: $X === NaN
+        - pattern: $X == NaN
+        - pattern: $X !== NaN
+        - pattern: $X != NaN

@@ -24,9 +24,30 @@ You only need **Node.js** installed on your system (no npm packages required).
 We have a client-side unit test suite located in the `/test` directory. It verifies all Fraction arithmetic, expression parsing, and Equation Generator steps.
 
 To run the test suite:
-1. Ensure the local development server is running (`node server.js`).
-2. Navigate to **[http://localhost:3000/test/](http://localhost:3000/test/)** in your browser.
+1. Ensure the local development server is running (`node server.js` or `make start`).
+2. Navigate to **[http://localhost:3000/test/](http://localhost:3000/test/)** in your browser, or run headless tests via `make test`.
 3. The dashboard will automatically execute the tests and render pass/fail reports with execution times.
+
+## Code Quality & Pre-Commit Hooks
+
+We enforce lightweight, sub-second code quality checks with zero heavy dependencies:
+
+1. **Install Git Hooks:**
+   ```bash
+   make install-hooks
+   ```
+2. **Check JavaScript Syntax:**
+   ```bash
+   make lint
+   ```
+3. **Scan AST Structural Rules (`ast-grep`):**
+   ```bash
+   make lint-rules
+   ```
+4. **Run Pre-Commit Gates Manually:**
+   ```bash
+   make pre-commit
+   ```
 
 ## GitHub Actions & Pages Setup
 

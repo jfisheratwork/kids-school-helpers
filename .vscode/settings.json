@@ -1,0 +1,4 @@
+{
+    "editor.experimental.treeSitterTelemetry": true,
+    "editor.experimentalGpuAcceleration": "on"
+}

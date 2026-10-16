@@ -1,0 +1,16 @@
+id: no-silent-empty-catch
+message: 'Do not swallow exceptions silently in empty catch blocks. Log the error or handle it explicitly.'
+severity: warning
+language: javascript
+rule:
+    any:
+        - pattern: |
+            try {
+              $$$TRY
+            } catch ($PARAM) {
+            }
+        - pattern: |
+            try {
+              $$$TRY
+            } catch {
+            }
