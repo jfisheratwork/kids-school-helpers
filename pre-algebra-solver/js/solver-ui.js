@@ -1,5 +1,6 @@
 import { state } from './state.js';
 import { updateHints, hideVisualExplanation, triggerVisualExplanation } from './hints-player.js';
+import { ViewTransitions } from '../../shared/js/view-transitions.js';
 
 export function copyAnswerToInput(val) {
   const input = document.getElementById('step-input');
@@ -96,24 +97,13 @@ export function generateNew() {
 }
 
 export function applyViewTransitionNames(container, prefix = '') {
-  container.querySelectorAll('[id]').forEach(el => {
-    el.style.viewTransitionName = prefix + el.id.replace(/[^a-zA-Z0-9_-]/g, '_');
-  });
+  ViewTransitions.applyNames(container, prefix);
 }
 
 export function updateCurrentEquationDisplay(latex) {
   const display = document.getElementById('current-equation-display');
-  if (!document.startViewTransition) {
+  ViewTransitions.update(display, 'eq_', () => {
     window.MathRenderer.renderBlock(latex, display);
-    applyViewTransitionNames(display, 'eq_');
-    return;
-  }
-  display.querySelectorAll('[id]').forEach(el => {
-    el.style.viewTransitionName = 'eq_' + el.id.replace(/[^a-zA-Z0-9_-]/g, '_');
-  });
-  document.startViewTransition(() => {
-    window.MathRenderer.renderBlock(latex, display);
-    applyViewTransitionNames(display, 'eq_');
   });
 }
 

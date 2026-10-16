@@ -1,4 +1,4 @@
-import { Fraction } from './fraction.js';
+import { Fraction } from '../../shared/js/fraction.js';
 
 export function generateFractionProblem(type) {
     let f1, f2;
@@ -27,7 +27,7 @@ export function generateFractionProblem(type) {
         tex: `\\frac{${f1.n} \\times ${f2.n}}{${f1.d} \\times ${f2.d}} = \\frac{${rawN}}{${rawD}}`
     });
 
-    const finalFraction = f1.multiply(f2);
+    const finalFraction = f1.mul(f2);
     
     if (rawN !== finalFraction.n || rawD !== finalFraction.d) {
         steps.push({

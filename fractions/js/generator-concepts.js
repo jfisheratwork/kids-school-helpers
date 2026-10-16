@@ -1,4 +1,4 @@
-import { Fraction } from './fraction.js';
+import { Fraction } from '../../shared/js/fraction.js';
 
 export function generateConceptsProblem() {
     // Randomly choose between fraction categorization, LCM, GCD, and Simplify

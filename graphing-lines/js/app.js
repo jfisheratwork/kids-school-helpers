@@ -6,11 +6,13 @@ import { initHintsPlayer } from './hints-player.js';
 import { generateWorksheet } from './worksheet-generator.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Math Renderer Bridge (use KaTeX global)
-  window.MathRenderer = {
-    renderInline: (latex, element) => katex.render(latex, element, { displayMode: false }),
-    renderBlock: (latex, element) => katex.render(latex, element, { displayMode: true })
-  };
+  // 1. Math Renderer (provided by shared/js/renderer.js with fallback)
+  if (!window.MathRenderer && typeof katex !== 'undefined') {
+    window.MathRenderer = {
+      renderInline: (latex, element) => katex.render(latex, element, { displayMode: false, throwOnError: false }),
+      renderBlock: (latex, element) => katex.render(latex, element, { displayMode: true, throwOnError: false })
+    };
+  }
 
   // 2. Initialize Graph Renderer
   initGraph('graph-container');

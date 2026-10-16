@@ -1,4 +1,4 @@
-import { Fraction } from './fraction.js';
+import { Fraction } from '../../shared/js/fraction.js';
 
 export function generateDivProblem(fractionType) {
     let f1, f2;

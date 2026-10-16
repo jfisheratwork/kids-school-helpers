@@ -1,5 +1,6 @@
 import { generateLongDivisionProblem } from './generator-long-division.js';
 import { playNextHint, resetHintPlayer } from './hints-player-long-division.js';
+import { ViewTransitions } from '../../shared/js/view-transitions.js';
 
 let currentProblem = null;
 let currentStepIndex = 0;
@@ -36,8 +37,11 @@ function handleGenerate() {
     currentStepIndex = 0;
     
     resetHintPlayer();
-    renderGrid();
-    setupCurrentStep();
+    
+    ViewTransitions.update(document.getElementById('long-division-math-grid'), 'div_', () => {
+        renderGrid();
+        setupCurrentStep();
+    });
 }
 
 function renderGrid() {
@@ -144,11 +148,15 @@ function handleInput(e) {
         if (val === step.expectedInput) {
             // Correct!
             document.getElementById('long-division-step-error').classList.add('hidden');
-            renderStepResult(step);
+            e.target.value = '';
             
-            currentStepIndex++;
-            setupCurrentStep();
-            resetHintPlayer();
+            ViewTransitions.update(document.getElementById('long-division-math-grid'), 'div_', () => {
+                renderStepResult(step);
+                
+                currentStepIndex++;
+                setupCurrentStep();
+                resetHintPlayer();
+            });
         } else {
             // Incorrect
             const errorDiv = document.getElementById('long-division-step-error');

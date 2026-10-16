@@ -111,7 +111,6 @@ function handleGraphClick(e) {
 
     if (state.determine.step === 0) {
       // Find y-intercept
-      console.error(`DETERMINE CLICK: x=${x}, y=${y}, b=${b}, step=${state.determine.step}`);
       if (x === 0 && y === b) {
         plotPoint(x, y, 'det-y-int', '#10b981');
         state.determine.yInterceptIdentified = true;

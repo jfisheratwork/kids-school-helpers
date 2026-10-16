@@ -1,3 +1,6 @@
+import { Fraction } from '../shared/js/fraction.js';
+import { EquationGenerator } from '../pre-algebra-solver/js/generator.js';
+
 // Simple browser assertion library
 const assert = {
   ok(val, msg) {
@@ -17,7 +20,7 @@ const assert = {
   }
 };
 
-const testSuite = {
+export const testSuite = {
   suites: {},
   currentSuite: null,
   
@@ -272,3 +275,10 @@ testSuite.describe("Equation Generator and Validator Suite", () => {
     assert.ok(valIsolateSub.errorMsg.includes("divide by the coefficient"));
   });
 });
+
+if (typeof window !== 'undefined') {
+  window.testSuite = testSuite;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { testSuite };
+}

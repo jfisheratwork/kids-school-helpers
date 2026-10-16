@@ -7,17 +7,7 @@
     <!-- Tailwind CSS Release Notes: https://github.com/tailwindlabs/tailwindcss/releases/tag/v3.4.4 -->
     <script src="https://cdn.tailwindcss.com?version=3.4.4"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-            }
-          }
-        }
-      }
-    </script>
+    <script src="../shared/js/tailwind-config.js"></script>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans min-h-screen p-8">
     <main class="max-w-4xl mx-auto space-y-6">
@@ -51,13 +41,17 @@
         </div>
     </main>
 
-    <!-- Source Files -->
-    <script src="../pre-algebra-solver/js/fraction.js?v=1.0.1"></script>
-    <script src="../pre-algebra-solver/js/generator.js?v=1.0.1"></script>
-    <script src="unit-tests.js?v=1.0.1"></script>
-    
-    <script>
-      window.addEventListener('DOMContentLoaded', () => {
+    <!-- Test Module Runner -->
+    <script type="module">
+      import { Fraction } from '../shared/js/fraction.js';
+      import { EquationGenerator } from '../pre-algebra-solver/js/generator.js';
+      import { testSuite } from './unit-tests.js';
+
+      window.Fraction = Fraction;
+      window.EquationGenerator = EquationGenerator;
+      window.testSuite = testSuite;
+
+      function runTests() {
         testSuite.run((summary) => {
           document.getElementById('stat-total').textContent = summary.total;
           document.getElementById('stat-passed').textContent = summary.passed;
@@ -99,7 +93,13 @@
             container.appendChild(suiteCard);
           });
         });
-      });
+      }
+
+      if (document.readyState === 'loading') {
+        window.addEventListener('DOMContentLoaded', runTests);
+      } else {
+        runTests();
+      }
     </script>
 </body>
 </html>

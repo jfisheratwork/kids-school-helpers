@@ -1,5 +1,6 @@
 import { state } from './state.js';
 import { applyViewTransitionNames, updateAnimationButtons, submitCurrentStepAsCorrect } from './solver-ui.js';
+import { ViewTransitions } from '../../shared/js/view-transitions.js';
 
 window.submitCurrentStepAsCorrect = submitCurrentStepAsCorrect; // Expose so we can call it if needed, or call directly
 
@@ -64,27 +65,10 @@ export function showFrame(index) {
   const display = document.getElementById('visual-explanation-display');
   const counter = document.getElementById('anim-frame-counter');
   
-  if (!document.startViewTransition) {
+  ViewTransitions.update(display, 'vis_', () => {
     window.MathRenderer.renderBlock(state.animFrames[index], display);
-    applyViewTransitionNames(display, 'vis_');
     counter.textContent = `${index + 1}/${state.animFrames.length}`;
     updateAnimationButtons();
-    return;
-  }
-  
-  display.querySelectorAll('[id]').forEach(el => {
-    el.style.viewTransitionName = 'vis_' + el.id.replace(/[^a-zA-Z0-9_-]/g, '_');
-  });
-
-  document.documentElement.classList.add('slow-transition');
-  const transition = document.startViewTransition(() => {
-    window.MathRenderer.renderBlock(state.animFrames[index], display);
-    applyViewTransitionNames(display, 'vis_');
-    counter.textContent = `${index + 1}/${state.animFrames.length}`;
-    updateAnimationButtons();
-  });
-  transition.finished.finally(() => {
-    document.documentElement.classList.remove('slow-transition');
   });
 }
 

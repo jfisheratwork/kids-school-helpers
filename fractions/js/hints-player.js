@@ -1,3 +1,5 @@
+import { ViewTransitions } from '../../shared/js/view-transitions.js';
+
 let animFrames = [];
 let animIndex = 0;
 let animPlaying = false;
@@ -127,35 +129,14 @@ function playAnimation(frames, autoplay = false) {
     }
 }
 
-function applyViewTransitionNames(container, prefix = '') {
-    container.querySelectorAll('[id]').forEach(el => {
-        el.style.viewTransitionName = prefix + el.id.replace(/[^a-zA-Z0-9_-]/g, '_');
-    });
-}
-
 function showFrame(index) {
     const display = document.getElementById('visual-explanation-display');
     const counter = document.getElementById('anim-frame-counter');
-    
-    if (!document.startViewTransition) {
-        window.MathRenderer.renderBlock(animFrames[index], display);
-        applyViewTransitionNames(display, 'vis_');
-        counter.textContent = `${index + 1}/${animFrames.length}`;
-        return;
-    }
-    
-    display.querySelectorAll('[id]').forEach(el => {
-        el.style.viewTransitionName = 'vis_' + el.id.replace(/[^a-zA-Z0-9_-]/g, '_');
-    });
+    if (!display) return;
 
-    document.documentElement.classList.add('slow-transition');
-    const transition = document.startViewTransition(() => {
+    ViewTransitions.update(display, 'vis_', () => {
         window.MathRenderer.renderBlock(animFrames[index], display);
-        applyViewTransitionNames(display, 'vis_');
-        counter.textContent = `${index + 1}/${animFrames.length}`;
-    });
-    transition.finished.finally(() => {
-        document.documentElement.classList.remove('slow-transition');
+        if (counter) counter.textContent = `${index + 1}/${animFrames.length}`;
     });
 }
 

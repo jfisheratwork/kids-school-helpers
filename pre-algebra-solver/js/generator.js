@@ -1,6 +1,6 @@
-// Requires Fraction class to be loaded first.
+import { Fraction } from '../../shared/js/fraction.js';
 
-class EquationGenerator {
+export class EquationGenerator {
   static formatLaTeXTerm(coeff, varSymbol, isLeading, idPrefix) {
     coeff = Fraction.cast(coeff);
     if (coeff.n === 0) return '';
@@ -778,4 +778,9 @@ class EquationGenerator {
   }
 }
 
-window.EquationGenerator = EquationGenerator;
+if (typeof window !== 'undefined') {
+  window.EquationGenerator = EquationGenerator;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { EquationGenerator };
+}

@@ -1,36 +1,90 @@
 import { generateFractionDivisionProblem } from './generator-fractions-division.js';
+import { attachFractionsHintListener } from './hints-player-fractions-division.js';
+import { MathRenderer } from '../../shared/js/renderer.js';
 
 let currentProblem = null;
 let currentStepIndex = 0;
+let historyTex = "";
 
 export function initFractionsSolver() {
     const btnGenerate = document.getElementById('btn-generate-fractions');
     if (btnGenerate) {
-        btnGenerate.addEventListener('click', handleGenerate);
+        btnGenerate.addEventListener('click', startNewProblem);
+    }
+    
+    const input = document.getElementById('fractions-step-input');
+    if (input) {
+        input.addEventListener('keydown', handleInput);
+        attachFractionsHintListener(input, () => currentProblem, () => currentStepIndex);
     }
 }
 
-function handleGenerate() {
-    const type = document.getElementById('fraction-type').value;
+function startNewProblem() {
+    const typeSelect = document.getElementById('config-fraction-type');
+    const type = typeSelect ? typeSelect.value : 'proper';
     currentProblem = generateFractionDivisionProblem(type);
     currentStepIndex = 0;
+    historyTex = currentProblem.texInitial;
+
+    renderMath();
     
-    renderUI();
+    const input = document.getElementById('fractions-step-input');
+    if (input) {
+        input.value = '';
+        input.focus();
+        input.disabled = false;
+    }
+    
+    const errEl = document.getElementById('fractions-step-error');
+    if (errEl) errEl.classList.add('hidden');
+    
+    const hintBox = document.getElementById('fractions-hint-content');
+    if (hintBox) {
+        hintBox.innerHTML = `Step 1: Keep-Change-Flip. Flip the second fraction to turn division into multiplication. Enter the flipped fraction (e.g. '${currentProblem.steps[0].expectedInput}').`;
+    }
 }
 
-function renderUI() {
-    const container = document.getElementById('fraction-equation-container');
-    if (!container) return;
-    
-    // Simplistic render for now
-    let tex = currentProblem.texInitial;
-    currentProblem.steps.forEach((step, index) => {
-        if (index < currentStepIndex) {
-            tex += ` = ${step.tex.replace('\\text{Simplify: } ', '')}`;
+function renderMath() {
+    const display = document.getElementById('fractions-math-display');
+    if (display) {
+        MathRenderer.render(historyTex, display, true);
+    }
+}
+
+function handleInput(e) {
+    if (e.key === 'Enter') {
+        const val = e.target.value.trim().replace(/\s+/g, '');
+        const currentStep = currentProblem.steps[currentStepIndex];
+        const isMatch = val === currentStep.expectedInput || (currentStep.altExpected && val === currentStep.altExpected);
+        
+        if (isMatch) {
+            const err = document.getElementById('fractions-step-error');
+            if (err) err.classList.add('hidden');
+            
+            historyTex += ` = ${currentStep.tex.replace('\\text{Simplify: } ', '')}`;
+            renderMath();
+
+            e.target.value = '';
+            currentStepIndex++;
+            
+            const hintBox = document.getElementById('fractions-hint-content');
+            if (currentStepIndex >= currentProblem.steps.length) {
+                if (hintBox) hintBox.innerHTML = `🎉 Great job! You solved it!`;
+                e.target.disabled = true;
+            } else {
+                const nextStep = currentProblem.steps[currentStepIndex];
+                if (nextStep.type === 'multiply') {
+                    if (hintBox) hintBox.innerHTML = `Step 2: Multiply the numerators together and the denominators together. (e.g. 'numerator/denominator')`;
+                } else if (nextStep.type === 'simplify') {
+                    if (hintBox) hintBox.innerHTML = `Step 3: Simplify the fraction to lowest terms.`;
+                }
+            }
+        } else {
+            const err = document.getElementById('fractions-step-error');
+            if (err) {
+                err.textContent = "Incorrect, try again or press Tab for a hint.";
+                err.classList.remove('hidden');
+            }
         }
-    });
-    
-    if (window.katex) {
-        katex.render(tex, container, { throwOnError: false, displayMode: true });
     }
 }

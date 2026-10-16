@@ -1,4 +1,4 @@
-import { Fraction } from './fraction.js';
+import { Fraction } from '../../shared/js/fraction.js';
 
 export function generateFractionDivisionProblem(type) {
     let f1, f2;
@@ -9,6 +9,8 @@ export function generateFractionDivisionProblem(type) {
         // Ensure proper
         if (f1.n >= f1.d) f1.n = f1.d - 1;
         if (f2.n >= f2.d) f2.n = f2.d - 1;
+        if (f1.n === 0) f1.n = 1;
+        if (f2.n === 0) f2.n = 1;
     } else {
         // mixed / improper
         f1 = new Fraction(Math.floor(Math.random() * 10) + 3, Math.floor(Math.random() * 4) + 2);
@@ -19,8 +21,11 @@ export function generateFractionDivisionProblem(type) {
     
     // Step 0: Keep Change Flip
     const f2Flipped = new Fraction(f2.d, f2.n);
+    const flippedExpected = f2Flipped.d === 1 ? `${f2Flipped.n}` : `${f2Flipped.n}/${f2Flipped.d}`;
     steps.push({
         type: 'keep_change_flip',
+        expectedInput: flippedExpected,
+        altExpected: `${f1.n}/${f1.d}*${f2Flipped.n}/${f2Flipped.d}`,
         tex: `${f1.toTeX()} \\times ${f2Flipped.toTeX()}`
     });
     
@@ -34,7 +39,7 @@ export function generateFractionDivisionProblem(type) {
         tex: `\\frac{${f1.n} \\times ${f2Flipped.n}}{${f1.d} \\times ${f2Flipped.d}} = \\frac{${rawN}}{${rawD}}`
     });
 
-    const finalFraction = f1.multiply(f2Flipped);
+    const finalFraction = f1.mul(f2Flipped);
     
     if (rawN !== finalFraction.n || rawD !== finalFraction.d) {
         steps.push({
@@ -47,6 +52,7 @@ export function generateFractionDivisionProblem(type) {
     return {
         f1,
         f2,
+        f2Flipped,
         steps,
         texInitial: `${f1.toTeX()} \\div ${f2.toTeX()}`
     };

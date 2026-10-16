@@ -2,6 +2,7 @@
 
 import { generateStandardProblem } from './generator-standard.js';
 import { attachHintListener, playNextHint } from './hints-player-standard.js';
+import { ViewTransitions } from '../../shared/js/view-transitions.js';
 
 let currentProblem = null;
 let currentStepIndex = 0;
@@ -27,9 +28,11 @@ function startNewProblem() {
     currentProblem = generateStandardProblem(topDigits, bottomDigits, decimalConfig);
     currentStepIndex = 0;
 
-    renderGrid();
-    processAutoSteps();
-    updateHint();
+    ViewTransitions.update(document.getElementById('standard-math-grid'), 'mult_', () => {
+        renderGrid();
+        processAutoSteps();
+        updateHint();
+    });
 
     const input = document.getElementById('standard-step-input');
     input.value = '';
@@ -173,66 +176,70 @@ function handleInput(e) {
         if (val === step.expectedInput) {
             // Correct!
             document.getElementById('standard-step-error').classList.add('hidden');
+            e.target.value = '';
 
-            // Adjust col indices by +1 because we added a column on the left
-            if (step.type === 'multiply_digit' || step.type === 'multiply_digit_last') {
-                if (step.type === 'multiply_digit_last') {
-                    // Populate full result spanning cells
-                    let resStr = step.fullResult;
-                    let targetCol = step.targetCol + 1;
-                    for (let i = resStr.length - 1; i >= 0; i--) {
-                        const cell = document.getElementById(`pp-cell-${step.rowIndex}-${targetCol}`);
-                        if (cell) cell.textContent = resStr[i];
-                        targetCol--;
+            const gridContainer = document.getElementById('standard-math-grid');
+            
+            ViewTransitions.update(gridContainer, 'mult_', () => {
+                // Adjust col indices by +1 because we added a column on the left
+                if (step.type === 'multiply_digit' || step.type === 'multiply_digit_last') {
+                    if (step.type === 'multiply_digit_last') {
+                        // Populate full result spanning cells
+                        let resStr = step.fullResult;
+                        let targetCol = step.targetCol + 1;
+                        for (let i = resStr.length - 1; i >= 0; i--) {
+                            const cell = document.getElementById(`pp-cell-${step.rowIndex}-${targetCol}`);
+                            if (cell) cell.textContent = resStr[i];
+                            targetCol--;
+                        }
+                    } else {
+                        const cell = document.getElementById(`pp-cell-${step.rowIndex}-${step.targetCol + 1}`);
+                        if (cell) cell.textContent = step.resultDigit;
+
+                        if (step.carryOut > 0 && step.carryCol) {
+                            const carryContainer = document.getElementById(`carry-col-${step.carryCol + 1}`);
+                            if (carryContainer) {
+                                const carrySpan = document.createElement('span');
+                                carrySpan.className = 'carry-digit carry-active carry-animate font-bold';
+                                carrySpan.textContent = step.carryOut;
+                                carryContainer.appendChild(carrySpan);
+                            }
+                        }
                     }
-                } else {
+                } else if (step.type === 'add_placeholder') {
                     const cell = document.getElementById(`pp-cell-${step.rowIndex}-${step.targetCol + 1}`);
+                    if (cell) cell.innerHTML = `<span class="placeholder-animate">${step.expectedInput}</span>`;
+                } else if (step.type === 'final_add_digit') {
+                    document.getElementById('final-row').style.display = 'table-row';
+                    const cell = document.getElementById(`final-cell-${step.targetCol + 1}`);
                     if (cell) cell.textContent = step.resultDigit;
 
                     if (step.carryOut > 0 && step.carryCol) {
-                        const carryContainer = document.getElementById(`carry-col-${step.carryCol + 1}`);
-                        if (carryContainer) {
-                            const carrySpan = document.createElement('span');
-                            carrySpan.className = 'carry-digit carry-active carry-animate font-bold';
-                            carrySpan.textContent = step.carryOut;
-                            carryContainer.appendChild(carrySpan);
+                        const carryCell = document.getElementById(`add-carry-cell-${step.carryCol + 1}`);
+                        if (carryCell) {
+                            carryCell.textContent = step.carryOut;
+                            carryCell.classList.add('carry-animate');
                         }
                     }
-                }
-            } else if (step.type === 'add_placeholder') {
-                const cell = document.getElementById(`pp-cell-${step.rowIndex}-${step.targetCol + 1}`);
-                if (cell) cell.innerHTML = `<span class="placeholder-animate">${step.expectedInput}</span>`;
-            } else if (step.type === 'final_add_digit') {
-                document.getElementById('final-row').style.display = 'table-row';
-                const cell = document.getElementById(`final-cell-${step.targetCol + 1}`);
-                if (cell) cell.textContent = step.resultDigit;
-
-                if (step.carryOut > 0 && step.carryCol) {
-                    const carryCell = document.getElementById(`add-carry-cell-${step.carryCol + 1}`);
-                    if (carryCell) {
-                        carryCell.textContent = step.carryOut;
-                        carryCell.classList.add('carry-animate');
+                } else if (step.type === 'place_decimal') {
+                    if (step.isSingleRow) {
+                        // For single row, place the decimal in the first partial product row
+                        const cell = document.getElementById(`pp-cell-0-${step.targetCol + 1}`);
+                        if (cell) cell.textContent += '.';
+                    } else {
+                        const cell = document.getElementById(`final-cell-${step.targetCol + 1}`);
+                        if (cell) cell.textContent += '.';
                     }
                 }
-            } else if (step.type === 'place_decimal') {
-                if (step.isSingleRow) {
-                    // For single row, place the decimal in the first partial product row
-                    const cell = document.getElementById(`pp-cell-0-${step.targetCol + 1}`);
-                    if (cell) cell.textContent += '.';
-                } else {
-                    const cell = document.getElementById(`final-cell-${step.targetCol + 1}`);
-                    if (cell) cell.textContent += '.';
+                
+                currentStepIndex++;
+                processAutoSteps();
+                updateHint();
+
+                if (currentStepIndex >= currentProblem.steps.length) {
+                    e.target.disabled = true;
                 }
-            }
-
-            e.target.value = '';
-            currentStepIndex++;
-            processAutoSteps();
-            updateHint();
-
-            if (currentStepIndex >= currentProblem.steps.length) {
-                e.target.disabled = true;
-            }
+            });
         } else {
             const err = document.getElementById('standard-step-error');
             err.textContent = "Incorrect, try again or press Tab for a hint.";

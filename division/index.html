@@ -4,33 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Division Practice</title>
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS v3.4.4 Release Notes: https://github.com/tailwindlabs/tailwindcss/releases/tag/v3.4.4 -->
     <script src="https://cdn.tailwindcss.com?version=3.4.4"></script>
     
-    <!-- KaTeX -->
+    <!-- KaTeX v0.16.10 Release Notes: https://github.com/KaTeX/KaTeX/releases/tag/v0.16.10 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
 
-    <!-- KaTeX Release Notes: https://github.com/KaTeX/KaTeX/releases/tag/v0.16.10 -->
-    <link rel="stylesheet" href="../pre-algebra-solver/lib/katex/katex.min.css">
-    <script src="../pre-algebra-solver/lib/katex/katex.min.js"></script>
-
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-            },
-            colors: {
-              primary: '#3B82F6',
-              secondary: '#2563EB',
-            }
-          }
-        }
-      }
-    </script>
+    <script src="../shared/js/renderer.js"></script>
+    <script src="../shared/js/tailwind-config.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../shared/css/main.css">
     <link rel="stylesheet" href="css/styles.css?v=2">
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans min-h-screen">
@@ -63,11 +47,11 @@
             </summary>
             <div class="p-6 bg-white border-t border-blue-100/50 text-sm text-gray-700 space-y-3">
                 <ol class="list-decimal list-inside space-y-2.5 font-medium text-gray-800">
-                    <li><span class="font-bold text-blue-600">Multiply</span> the bottom ones digit by each digit in the top number, right to left. Write the carry above the next digit if the product is 10 or more.</li>
-                    <li><span class="font-bold text-blue-600">Add a zero</span> placeholder for the next row.</li>
-                    <li><span class="font-bold text-blue-600">Multiply</span> the bottom tens digit (and so on) by the top number.</li>
-                    <li><span class="font-bold text-blue-600">Sum</span> the partial products.</li>
-                    <li>If decimals are present, <span class="font-bold text-blue-600">count the decimal places</span> in the factors and place the decimal point in the final product.</li>
+                    <li><span class="font-bold text-blue-600">Divide</span>: Determine how many times the divisor goes into the first digit or group of digits of the dividend.</li>
+                    <li><span class="font-bold text-blue-600">Multiply</span>: Multiply the divisor by the quotient digit you just found.</li>
+                    <li><span class="font-bold text-blue-600">Subtract</span>: Subtract that product from the working number to find the remainder.</li>
+                    <li><span class="font-bold text-blue-600">Bring Down</span>: Bring down the next digit of the dividend next to the remainder.</li>
+                    <li><span class="font-bold text-blue-600">Repeat or Remainder</span>: Repeat the steps until all digits have been brought down, then record any final remainder.</li>
                 </ol>
             </div>
         </details>
@@ -172,8 +156,8 @@
                     <div class="w-full md:w-64">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Problem Type</label>
                         <select id="config-fraction-type" class="w-full border border-gray-300 rounded-md p-2 focus:ring-primary focus:border-primary">
-                            <option value="proper" selected>Proper Fractions (e.g. 1/2 x 3/4)</option>
-                            <option value="mixed">Mixed Numbers (e.g. 1 1/2 x 2)</option>
+                            <option value="proper" selected>Proper Fractions (e.g. 1/2 ÷ 3/4)</option>
+                            <option value="mixed">Mixed Numbers (e.g. 1 1/2 ÷ 2)</option>
                         </select>
                     </div>
                 </div>

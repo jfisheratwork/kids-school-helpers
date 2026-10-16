@@ -4,32 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fractions Practice</title>
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS v3.4.4 Release Notes: https://github.com/tailwindlabs/tailwindcss/releases/tag/v3.4.4 -->
     <script src="https://cdn.tailwindcss.com?version=3.4.4"></script>
     
-    <!-- KaTeX -->
+    <!-- KaTeX v0.16.10 Release Notes: https://github.com/KaTeX/KaTeX/releases/tag/v0.16.10 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
 
     <!-- MathRenderer -->
-    <script src="js/renderer.js"></script>
+    <script src="../shared/js/renderer.js"></script>
 
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-            },
-            colors: {
-              primary: '#3B82F6',
-              secondary: '#2563EB',
-            }
-          }
-        }
-      }
-    </script>
+    <script src="../shared/js/tailwind-config.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../shared/css/main.css">
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans min-h-screen">
     <!-- Navbar -->
