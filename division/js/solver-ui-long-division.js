@@ -10,12 +10,11 @@ export function initLongDivisionSolver() {
     if (btnGenerate) {
         btnGenerate.addEventListener('click', handleGenerate);
     }
-    
-    // Global key listener for the interactive solver
+
     document.addEventListener('keydown', (e) => {
-        if (document.getElementById('mode-long-division-container').classList.contains('hidden')) return;
-        
-        // Tab for hint
+        const container = document.getElementById('mode-long-division-container');
+        if (!container || container.classList.contains('hidden')) return;
+
         if (e.key === 'Tab') {
             e.preventDefault();
             playNextHint(currentProblem, currentStepIndex);
@@ -29,15 +28,14 @@ export function initLongDivisionSolver() {
 }
 
 function handleGenerate() {
-    const topDigits = document.getElementById('config-top-digits').value; // Dividend digits
-    const bottomDigits = document.getElementById('config-bottom-digits').value; // Divisor digits
-    
-    // Using existing config selects, but repurposing them: top=dividend, bottom=divisor
-    currentProblem = generateLongDivisionProblem(parseInt(topDigits), parseInt(bottomDigits), '0');
+    const topDigits = document.getElementById('config-top-digits').value;
+    const bottomDigits = document.getElementById('config-bottom-digits').value;
+
+    currentProblem = generateLongDivisionProblem(parseInt(topDigits, 10), parseInt(bottomDigits, 10), '0');
     currentStepIndex = 0;
-    
+
     resetHintPlayer();
-    
+
     ViewTransitions.update(document.getElementById('long-division-math-grid'), 'div_', () => {
         renderGrid();
         setupCurrentStep();
@@ -47,56 +45,89 @@ function handleGenerate() {
 function renderGrid() {
     const container = document.getElementById('long-division-math-grid');
     if (!container) return;
+    container.replaceChildren();
 
     const divStr = currentProblem.dividendStr;
-    const colCount = divStr.length + 1; // +1 for divisor
-    
-    // We don't know exactly how many rows yet because of skips, but we can dynamically append rows
-    // as steps progress, or render them all hidden. Rendering them all hidden is easier.
-    
-    let html = `<table class="font-mono text-3xl mx-auto border-collapse" style="border-spacing: 0;"><tbody>`;
-    
+
+    const table = document.createElement('table');
+    table.className = 'font-mono text-3xl mx-auto border-collapse';
+    table.style.borderSpacing = '0';
+    const tbody = document.createElement('tbody');
+
     // Row 0: Quotient
-    html += `<tr id="quotient-row">`;
-    html += `<td class="p-2 w-12"></td>`; // above divisor
+    const qRow = document.createElement('tr');
+    qRow.id = 'quotient-row';
+    const emptyAboveDivisor = document.createElement('td');
+    emptyAboveDivisor.className = 'p-2 w-12';
+    qRow.appendChild(emptyAboveDivisor);
+
     for (let i = 0; i < divStr.length; i++) {
-        html += `<td class="p-2 text-center w-12 text-blue-600 font-bold" id="quotient-cell-${i}"></td>`;
+        const td = document.createElement('td');
+        td.className = 'p-2 text-center w-12 text-blue-600 font-bold';
+        td.id = `quotient-cell-${i}`;
+        qRow.appendChild(td);
     }
-    html += `</tr>`;
-    
+    tbody.appendChild(qRow);
+
     // Row 1: Divisor & Dividend
-    html += `<tr id="dividend-row">`;
-    html += `<td class="p-2 text-right w-12 font-bold pr-3">${currentProblem.divisor}</td>`;
+    const divRow = document.createElement('tr');
+    divRow.id = 'dividend-row';
+    const divisorTd = document.createElement('td');
+    divisorTd.className = 'p-2 text-right w-12 font-bold pr-3';
+    divisorTd.textContent = String(currentProblem.divisor);
+    divRow.appendChild(divisorTd);
+
     for (let i = 0; i < divStr.length; i++) {
-        let borderClass = i === 0 ? 'border-t-2 border-l-2 border-gray-800' : 'border-t-2 border-gray-800';
-        html += `<td class="p-2 text-center w-12 font-bold ${borderClass}" id="dividend-cell-${i}">${divStr[i]}</td>`;
+        const borderClass = i === 0 ? 'border-t-2 border-l-2 border-gray-800' : 'border-t-2 border-gray-800';
+        const td = document.createElement('td');
+        td.className = `p-2 text-center w-12 font-bold ${borderClass}`;
+        td.id = `dividend-cell-${i}`;
+        td.textContent = divStr[i];
+        divRow.appendChild(td);
     }
-    html += `</tr>`;
-    
+    tbody.appendChild(divRow);
+
     // Prepare rows for work (subtractions and bring downs)
     let cycle = 0;
     for (let i = 0; i < currentProblem.steps.length; i++) {
         if (currentProblem.steps[i].type === 'subtract_down') {
-            html += `<tr id="work-sub-${cycle}" style="display: none;">`;
-            html += `<td class="p-2 w-12 text-right">-</td>`;
+            const subRow = document.createElement('tr');
+            subRow.id = `work-sub-${cycle}`;
+            subRow.style.display = 'none';
+            const minusTd = document.createElement('td');
+            minusTd.className = 'p-2 w-12 text-right';
+            minusTd.textContent = '-';
+            subRow.appendChild(minusTd);
+
             for (let c = 0; c < divStr.length; c++) {
-                html += `<td class="p-2 text-center w-12 text-red-500 font-bold border-b-2 border-gray-400" id="work-sub-cell-${cycle}-${c}"></td>`;
+                const td = document.createElement('td');
+                td.className = 'p-2 text-center w-12 text-red-500 font-bold border-b-2 border-gray-400';
+                td.id = `work-sub-cell-${cycle}-${c}`;
+                subRow.appendChild(td);
             }
-            html += `</tr>`;
-            
-            html += `<tr id="work-rem-${cycle}" style="display: none;">`;
-            html += `<td class="p-2 w-12"></td>`;
+            tbody.appendChild(subRow);
+
+            const remRow = document.createElement('tr');
+            remRow.id = `work-rem-${cycle}`;
+            remRow.style.display = 'none';
+            const blankTd = document.createElement('td');
+            blankTd.className = 'p-2 w-12';
+            remRow.appendChild(blankTd);
+
             for (let c = 0; c < divStr.length; c++) {
-                html += `<td class="p-2 text-center w-12 font-bold" id="work-rem-cell-${cycle}-${c}"></td>`;
+                const td = document.createElement('td');
+                td.className = 'p-2 text-center w-12 font-bold';
+                td.id = `work-rem-cell-${cycle}-${c}`;
+                remRow.appendChild(td);
             }
-            html += `</tr>`;
-            
+            tbody.appendChild(remRow);
+
             cycle++;
         }
     }
-    
-    html += `</tbody></table>`;
-    container.innerHTML = html;
+
+    table.appendChild(tbody);
+    container.appendChild(table);
 }
 
 function setupCurrentStep() {
@@ -106,10 +137,10 @@ function setupCurrentStep() {
     error.classList.add('hidden');
 
     processAutoSteps();
-    
+
     if (currentStepIndex >= currentProblem.steps.length) {
         input.disabled = true;
-        input.value = "Done!";
+        input.value = 'Done!';
         updateHint();
         return;
     }
@@ -121,11 +152,7 @@ function setupCurrentStep() {
 
 function processAutoSteps() {
     let step = currentProblem.steps[currentStepIndex];
-    while(step && step.isSkip) {
-        // Skip over steps that have no expected input, e.g. leading 0s
-        if (step.type === 'divide_digit' && document.getElementById(`quotient-cell-${step.dividendIndex}`)) {
-            // we could choose to not print leading 0, or print it. We'll leave blank.
-        }
+    while (step && step.isSkip) {
         currentStepIndex++;
         step = currentProblem.steps[currentStepIndex];
     }
@@ -146,21 +173,19 @@ function handleInput(e) {
         if (!step) return;
 
         if (val === step.expectedInput) {
-            // Correct!
             document.getElementById('long-division-step-error').classList.add('hidden');
             e.target.value = '';
-            
+            resetHintPlayer();
+
             ViewTransitions.update(document.getElementById('long-division-math-grid'), 'div_', () => {
                 renderStepResult(step);
-                
+
                 currentStepIndex++;
                 setupCurrentStep();
-                resetHintPlayer();
             });
         } else {
-            // Incorrect
             const errorDiv = document.getElementById('long-division-step-error');
-            errorDiv.textContent = "Not quite right. Press Tab for a hint!";
+            errorDiv.textContent = 'Not quite right. Press Tab for a hint!';
             errorDiv.classList.remove('hidden');
             e.target.select();
         }
@@ -168,38 +193,37 @@ function handleInput(e) {
 }
 
 function renderStepResult(step) {
-    let cycle = getCycleForStep(currentStepIndex);
-    
+    const cycle = getCycleForStep(currentStepIndex);
+
     if (step.type === 'divide_digit') {
-        document.getElementById(`quotient-cell-${step.dividendIndex}`).innerText = step.qDigit;
+        const cell = document.getElementById(`quotient-cell-${step.dividendIndex}`);
+        if (cell) cell.textContent = String(step.qDigit);
     } else if (step.type === 'multiply_back') {
-        document.getElementById(`work-sub-${cycle}`).style.display = 'table-row';
-        let multStr = step.multBack.toString();
-        for(let k=0; k<multStr.length; k++) {
-            let offset = multStr.length - 1 - k;
-            let cellIdx = step.dividendIndex - offset;
-            let cell = document.getElementById(`work-sub-cell-${cycle}-${cellIdx}`);
-            if(cell) cell.innerText = multStr[k];
+        const row = document.getElementById(`work-sub-${cycle}`);
+        if (row) row.style.display = 'table-row';
+        const multStr = step.multBack.toString();
+        for (let k = 0; k < multStr.length; k++) {
+            const offset = multStr.length - 1 - k;
+            const cellIdx = step.dividendIndex - offset;
+            const cell = document.getElementById(`work-sub-cell-${cycle}-${cellIdx}`);
+            if (cell) cell.textContent = multStr[k];
         }
     } else if (step.type === 'subtract_down') {
-        document.getElementById(`work-rem-${cycle}`).style.display = 'table-row';
-        let remStr = step.remainder.toString();
-        for(let k=0; k<remStr.length; k++) {
-            let offset = remStr.length - 1 - k;
-            let cellIdx = step.dividendIndex - offset;
-            let cell = document.getElementById(`work-rem-cell-${cycle}-${cellIdx}`);
-            if(cell) cell.innerText = remStr[k];
+        const row = document.getElementById(`work-rem-${cycle}`);
+        if (row) row.style.display = 'table-row';
+        const remStr = step.remainder.toString();
+        for (let k = 0; k < remStr.length; k++) {
+            const offset = remStr.length - 1 - k;
+            const cellIdx = step.dividendIndex - offset;
+            const cell = document.getElementById(`work-rem-cell-${cycle}-${cellIdx}`);
+            if (cell) cell.textContent = remStr[k];
         }
     } else if (step.type === 'bring_down') {
-        // cycle is actually the previous one, because subtract_down incremented it for future steps, 
-        // wait, getCycleForStep counts previous subtract_downs. Since this is AFTER subtract_down, cycle is cycle.
-        // Actually, subtract_down is in the past, so getCycleForStep returns the current cycle block.
-        // Let's use cycle-1 because subtract_down incremented the visual block logically.
-        let prevCycle = cycle - 1; 
-        let cell = document.getElementById(`work-rem-cell-${prevCycle}-${step.dividendIndex}`);
-        if(cell) {
-            cell.innerText = step.nextDigit;
-            cell.classList.add('text-blue-500'); 
+        const prevCycle = cycle - 1;
+        const cell = document.getElementById(`work-rem-cell-${prevCycle}-${step.dividendIndex}`);
+        if (cell) {
+            cell.textContent = step.nextDigit;
+            cell.classList.add('text-blue-500');
         }
     }
 }
@@ -207,19 +231,20 @@ function renderStepResult(step) {
 function updateHint() {
     const step = currentProblem.steps[currentStepIndex];
     const hintDiv = document.getElementById('long-division-hint-content');
+    if (!hintDiv) return;
 
     if (!step) {
-        hintDiv.innerHTML = `Great job! You solved it!`;
+        hintDiv.textContent = 'Great job! You solved it!';
         return;
     }
 
     if (step.type === 'divide_digit') {
-        hintDiv.innerHTML = `Divide ${step.workingNum} by ${step.divisor}. How many times does it go in? Type the quotient digit above.`;
+        hintDiv.textContent = `Divide ${step.workingNum} by ${step.divisor}. How many times does it go in? Type the quotient digit above.`;
     } else if (step.type === 'multiply_back') {
-        hintDiv.innerHTML = `Multiply the digit you just wrote (${step.qDigit}) by the divisor (${step.divisor}). Type the result below.`;
+        hintDiv.textContent = `Multiply the digit you just wrote (${step.qDigit}) by the divisor (${step.divisor}). Type the result below.`;
     } else if (step.type === 'subtract_down') {
-        hintDiv.innerHTML = `Subtract ${step.multBack} from ${step.workingNum}. Type the remainder.`;
+        hintDiv.textContent = `Subtract ${step.multBack} from ${step.workingNum}. Type the remainder.`;
     } else if (step.type === 'bring_down') {
-        hintDiv.innerHTML = `Bring down the next digit of the dividend. Type the digit to bring down.`;
+        hintDiv.textContent = 'Bring down the next digit of the dividend. Type the digit to bring down.';
     }
 }

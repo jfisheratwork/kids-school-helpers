@@ -75,7 +75,17 @@ export function generateStandardProblem(topDigits, bottomDigits, decimalConfig) 
                     bDigit: bDigit,
                     expectedInput: '0',
                     targetCol: gridCols - z,
-                    rowIndex: i
+                    rowIndex: i,
+                    animationFrames: [
+                        { math: `\\text{Row } \\htmlId{r}{${i + 1}} \\text{ shift}` },
+                        { math: `\\text{Place } \\textcolor{#4f46e5}{\\htmlId{z}{0}} \\text{ in column}` },
+                        { math: `\\textcolor{#16a34a}{\\htmlId{z}{\\mathbf{0}}}` }
+                    ],
+                    frameCaptions: [
+                        'Step 1: Moving to the next multiplier place value row',
+                        'Step 2: Shift left by placing a zero placeholder',
+                        'Step 3: Enter 0 in the rightmost column'
+                    ]
                 });
             }
         }
@@ -90,17 +100,44 @@ export function generateStandardProblem(topDigits, bottomDigits, decimalConfig) 
             let resultDigit = prod % 10;
             let carryOut = Math.floor(prod / 10);
             
-            // If it's the last top digit, the result digit gets the whole product 
-            // OR we just write both digits. Usually we write the full product on the bottom line.
-            // Let's break it down: write ones digit, and carry goes to next col. 
-            // Wait, if it's the last digit, we don't carry up, we just write it down on the same row.
             let isLastTopDigit = (j === topRev.length - 1);
             
             let frames;
+            let frameCaptions;
             if (currentCarry > 0) {
-                frames = [{ math: `(${bDigit} \\times ${tDigit}) + ${currentCarry} \\text{ (carry)} = ${prod}` }];
+                frames = [
+                    { math: `(\\htmlId{b}{${bDigit}} \\times \\htmlId{t}{${tDigit}}) + \\textcolor{#4f46e5}{\\htmlId{c}{${currentCarry}}}` },
+                    { math: `\\htmlId{p}{${bDigit * tDigit}} + \\textcolor{#4f46e5}{\\htmlId{c}{${currentCarry}}} = \\htmlId{tot}{${prod}}` },
+                    {
+                        math: isLastTopDigit
+                            ? `\\text{Write } \\textcolor{#16a34a}{\\htmlId{tot}{\\mathbf{${prod}}}}`
+                            : `\\text{Write } \\textcolor{#16a34a}{\\htmlId{ones}{\\mathbf{${resultDigit}}}}, \\text{ carry } \\textcolor{#4f46e5}{\\htmlId{cout}{${carryOut}}}`
+                    }
+                ];
+                frameCaptions = [
+                    `Step 1: Multiply ${bDigit} × ${tDigit} and include carry ${currentCarry}`,
+                    `Step 2: Add ${bDigit * tDigit} + ${currentCarry} = ${prod}`,
+                    isLastTopDigit
+                        ? `Step 3: Write the full value ${prod}`
+                        : `Step 3: Write ones digit ${resultDigit} and carry ${carryOut}`
+                ];
             } else {
-                frames = [{ math: `${bDigit} \\times ${tDigit} = ${prod}` }];
+                frames = [
+                    { math: `\\htmlId{b}{${bDigit}} \\times \\htmlId{t}{${tDigit}}` },
+                    { math: `\\htmlId{b}{${bDigit}} \\times \\htmlId{t}{${tDigit}} = \\textcolor{#4f46e5}{\\htmlId{tot}{${prod}}}` },
+                    {
+                        math: isLastTopDigit
+                            ? `\\text{Write } \\textcolor{#16a34a}{\\htmlId{tot}{\\mathbf{${prod}}}}`
+                            : `\\text{Write } \\textcolor{#16a34a}{\\htmlId{ones}{\\mathbf{${resultDigit}}}}${carryOut > 0 ? `, \\text{ carry } \\textcolor{#4f46e5}{\\htmlId{cout}{${carryOut}}}` : ''}`
+                    }
+                ];
+                frameCaptions = [
+                    `Step 1: Multiply bottom digit ${bDigit} by top digit ${tDigit}`,
+                    `Step 2: Compute product ${bDigit} × ${tDigit} = ${prod}`,
+                    isLastTopDigit
+                        ? `Step 3: Write ${prod} in the partial product row`
+                        : `Step 3: Write ones digit ${resultDigit}${carryOut > 0 ? ` and carry ${carryOut}` : ''}`
+                ];
             }
             
             if (isLastTopDigit) {
@@ -113,13 +150,14 @@ export function generateStandardProblem(topDigits, bottomDigits, decimalConfig) 
                         tDigit,
                         carryIn: currentCarry,
                         fullResult: prod.toString(),
-                        expectedInput: prod.toString(), // User enters the whole final piece of the partial product
-                        targetCol: gridCols - i - j,    // Rightmost digit of this piece
-                        targetColStart: gridCols - i - j - 1, // Leftmost digit
+                        expectedInput: prod.toString(),
+                        targetCol: gridCols - i - j,
+                        targetColStart: gridCols - i - j - 1,
                         topCol: gridCols - j,
                         bottomCol: gridCols - i,
                         rowIndex: i,
-                        animationFrames: frames
+                        animationFrames: frames,
+                        frameCaptions
                     });
                 } else {
                     steps.push({
@@ -135,7 +173,8 @@ export function generateStandardProblem(topDigits, bottomDigits, decimalConfig) 
                         bottomCol: gridCols - i,
                         rowIndex: i,
                         carryCol: null,
-                        animationFrames: frames
+                        animationFrames: frames,
+                        frameCaptions
                     });
                 }
             } else {
@@ -153,7 +192,8 @@ export function generateStandardProblem(topDigits, bottomDigits, decimalConfig) 
                     bottomCol: gridCols - i,
                     rowIndex: i,
                     carryCol: gridCols - j - 1,
-                    animationFrames: frames
+                    animationFrames: frames,
+                    frameCaptions
                 });
             }
             
@@ -197,9 +237,8 @@ export function generateStandardProblem(topDigits, bottomDigits, decimalConfig) 
             let resultDigit = colSum % 10;
             let carryOut = Math.floor(colSum / 10);
             
-            let mathStr = addends.join(' + ');
-            if (carry > 0) mathStr += ` + ${carry} \\text{ (carry)}`;
-            mathStr += ` = ${colSum}`;
+            let taggedAddends = addends.map((d, idx) => `\\htmlId{a${idx}}{${d}}`).join(' + ');
+            if (carry > 0) taggedAddends += ` + \\textcolor{#4f46e5}{\\htmlId{cin}{${carry}}}`;
             
             steps.push({
                 type: 'final_add_digit',
@@ -209,7 +248,18 @@ export function generateStandardProblem(topDigits, bottomDigits, decimalConfig) 
                 carryOut: carryOut,
                 targetCol: gridCols - colIdx,
                 carryCol: gridCols - colIdx - 1,
-                animationFrames: [{ math: mathStr }]
+                animationFrames: [
+                    { math: taggedAddends },
+                    { math: `${taggedAddends} = \\textcolor{#4f46e5}{\\htmlId{sum}{${colSum}}}` },
+                    {
+                        math: `\\text{Write } \\textcolor{#16a34a}{\\htmlId{res}{\\mathbf{${resultDigit}}}}${carryOut > 0 ? `, \\text{ carry } \\textcolor{#4f46e5}{\\htmlId{cout}{${carryOut}}}` : ''}`
+                    }
+                ],
+                frameCaptions: [
+                    'Step 1: Identify partial product digits in this column',
+                    `Step 2: Sum the column digits to get ${colSum}`,
+                    `Step 3: Write ones digit ${resultDigit}${carryOut > 0 ? ` and carry ${carryOut}` : ''}`
+                ]
             });
             
             carry = carryOut;
@@ -223,7 +273,17 @@ export function generateStandardProblem(topDigits, bottomDigits, decimalConfig) 
             expectedInput: finalProductDisplay,
             decCount: totalDecimals,
             targetCol: gridCols - totalDecimals,
-            isSingleRow: bottomStr.length === 1
+            isSingleRow: bottomStr.length === 1,
+            animationFrames: [
+                { math: `\\htmlId{raw}{${totalStr}} \\quad (\\textcolor{#4f46e5}{\\htmlId{dec}{${totalDecimals}}} \\text{ dec. places})` },
+                { math: `\\text{Count } \\textcolor{#4f46e5}{\\htmlId{dec}{${totalDecimals}}} \\text{ places from right}` },
+                { math: `\\textcolor{#16a34a}{\\htmlId{raw}{\\mathbf{${finalProductDisplay}}}}` }
+            ],
+            frameCaptions: [
+                `Step 1: Count ${totalDecimals} total decimal place(s) in the factors`,
+                `Step 2: Shift decimal point ${totalDecimals} spot(s) from the right`,
+                `Step 3: Enter final product ${finalProductDisplay}`
+            ]
         });
     }
 

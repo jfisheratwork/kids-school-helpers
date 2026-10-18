@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { updateHints, hideVisualExplanation, triggerVisualExplanation } from './hints-player.js';
+import { updateHints, hideVisualExplanation, triggerVisualExplanation, fillCurrentStepAnswer } from './hints-player.js';
 import { ViewTransitions } from '../../shared/js/view-transitions.js';
 
 export function copyAnswerToInput(val) {
@@ -20,7 +20,7 @@ export function updateDevKeyVisibility() {
   const showKey = document.getElementById('config-show-key').checked;
   const devPanel = document.getElementById('dev-steps-panel');
   const solutionDisplay = document.getElementById('dev-solution-display');
-  
+
   if (showKey) {
     devPanel.classList.remove('hidden');
     solutionDisplay.classList.remove('hidden');
@@ -28,6 +28,28 @@ export function updateDevKeyVisibility() {
     devPanel.classList.add('hidden');
     solutionDisplay.classList.add('hidden');
   }
+}
+
+function appendHistoryItem(latex, badgeText, isOriginal = false) {
+  const historyList = document.getElementById('history-list');
+  const li = document.createElement('li');
+  li.className = isOriginal
+    ? 'flex items-center justify-between py-2 border-b border-gray-100 last:border-0 bg-blue-50/50 px-3 rounded-md mb-2'
+    : 'flex items-center justify-between py-2 border-b border-gray-100 last:border-0';
+
+  const mathSpan = document.createElement('span');
+  mathSpan.className = isOriginal ? 'math-step font-bold text-indigo-900' : 'math-step font-medium text-gray-800';
+
+  const badgeSpan = document.createElement('span');
+  badgeSpan.className = isOriginal
+    ? 'text-xs bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full font-semibold uppercase tracking-wider shadow-sm'
+    : 'text-xs bg-green-100 text-green-800 px-2.5 py-0.5 rounded-full font-semibold uppercase tracking-wider';
+  badgeSpan.textContent = badgeText;
+
+  li.appendChild(mathSpan);
+  li.appendChild(badgeSpan);
+  historyList.appendChild(li);
+  window.MathRenderer.renderInline(latex, mathSpan);
 }
 
 export function generateNew() {
@@ -46,11 +68,8 @@ export function generateNew() {
 
   state.currentStepIdx = 0;
   state.hintStepIdx = 0;
+  state.lastTabStepIdx = -1;
 
-  // Initialize transition duration based on current speed slider value
-  const speedSeconds = parseFloat(document.getElementById('anim-speed').value);
-  document.documentElement.style.setProperty('--transition-duration', speedSeconds + 's');
-  
   // Render initial equation
   const equationLaTeX = `${state.currentEquation.initialLHS} = ${state.currentEquation.initialRHS}`;
   updateCurrentEquationDisplay(equationLaTeX);
@@ -58,15 +77,8 @@ export function generateNew() {
 
   // Initialize history with the original equation
   const historyList = document.getElementById('history-list');
-  historyList.innerHTML = '';
-  const originalEqLi = document.createElement('li');
-  originalEqLi.className = 'flex items-center justify-between py-2 border-b border-gray-100 last:border-0 bg-blue-50/50 px-3 rounded-md mb-2';
-  originalEqLi.innerHTML = `
-    <span class="math-step font-bold text-indigo-900"></span>
-    <span class="text-xs bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full font-semibold uppercase tracking-wider shadow-sm">Original</span>
-  `;
-  historyList.appendChild(originalEqLi);
-  window.MathRenderer.renderInline(equationLaTeX, originalEqLi.querySelector('.math-step'));
+  historyList.replaceChildren();
+  appendHistoryItem(equationLaTeX, 'Original', true);
 
   // Setup Hints objectives
   updateHints();
@@ -74,16 +86,21 @@ export function generateNew() {
 
   // Show dev solution
   document.getElementById('dev-solution-display').textContent = `Solution: x = ${state.currentEquation.solution.toString()}`;
-  
+
   // Render dev steps list
   const devList = document.getElementById('dev-steps-list');
-  devList.innerHTML = '';
+  devList.replaceChildren();
   state.currentEquation.steps.forEach((s, idx) => {
-    const li = document.createElement('div');
-    li.className = 'flex items-center space-x-1.5 text-xs font-mono text-gray-600';
-    li.innerHTML = `<span>Step ${idx + 1} (${s.type}):</span> <span class="math-step-latex"></span>`;
-    devList.appendChild(li);
-    window.MathRenderer.renderInline(s.latex, li.querySelector('.math-step-latex'));
+    const row = document.createElement('div');
+    row.className = 'flex items-center space-x-1.5 text-xs font-mono text-gray-600';
+    const labelSpan = document.createElement('span');
+    labelSpan.textContent = `Step ${idx + 1} (${s.type}):`;
+    const mathSpan = document.createElement('span');
+    mathSpan.className = 'math-step-latex';
+    row.appendChild(labelSpan);
+    row.appendChild(mathSpan);
+    devList.appendChild(row);
+    window.MathRenderer.renderInline(s.latex, mathSpan);
   });
 
   updateDevKeyVisibility();
@@ -93,7 +110,7 @@ export function generateNew() {
   inputElem.value = '';
   inputElem.classList.remove('border-green-500', 'border-red-500', 'focus:border-green-500', 'focus:border-red-500');
   inputElem.disabled = false;
-  inputElem.placeholder = "Type your next step here... (Press Tab for hint)";
+  inputElem.placeholder = 'Type your next step here... (Press Tab for hint)';
 }
 
 export function applyViewTransitionNames(container, prefix = '') {
@@ -104,27 +121,28 @@ export function updateCurrentEquationDisplay(latex) {
   const display = document.getElementById('current-equation-display');
   ViewTransitions.update(display, 'eq_', () => {
     window.MathRenderer.renderBlock(latex, display);
+    setupOperatorTooltips();
   });
 }
 
 export function updateAnimationButtons() {
   const btnPrev = document.getElementById('btn-anim-prev');
   const btnNext = document.getElementById('btn-anim-next');
-  
-  if (!state.currentEquation) return;
-  
+
+  if (!state.currentEquation || !btnPrev || !btnNext) return;
+
   // Next button text
   if (state.animIndex === state.animFrames.length - 1 && state.hintStepIdx < state.currentEquation.steps.length - 1) {
-    btnNext.innerHTML = `Step ${state.hintStepIdx + 2} &rarr;`;
+    btnNext.textContent = `Step ${state.hintStepIdx + 2} \u2192`;
   } else {
-    btnNext.innerHTML = `Next &rarr;`;
+    btnNext.textContent = 'Next \u2192';
   }
-  
+
   // Back button text
   if (state.animIndex === 0 && state.hintStepIdx > state.currentStepIdx) {
-    btnPrev.innerHTML = `&larr; Step ${state.hintStepIdx}`;
+    btnPrev.textContent = `\u2190 Step ${state.hintStepIdx}`;
   } else {
-    btnPrev.innerHTML = `&larr; Back`;
+    btnPrev.textContent = '\u2190 Back';
   }
 }
 
@@ -137,24 +155,15 @@ export async function autoSolve() {
     if (sessionId !== state.solveSessionId) break;
     const nextStep = state.currentEquation.steps[state.currentStepIdx];
 
-    // 1. Show the step in the visual explanation box without autoplay
+    // 1. Show the step in the visual explanation box
     triggerVisualExplanation(state.currentStepIdx, false);
 
-    // 2. Wait for a short duration to let the user see the animation (e.g. 2.5 seconds)
+    // 2. Wait for a short duration to let the user see the animation
     await new Promise(resolve => setTimeout(resolve, 2500));
     if (sessionId !== state.solveSessionId) break;
 
     // 3. Append the completed step to history
-    const historyList = document.getElementById('history-list');
-
-    const newStepLi = document.createElement('li');
-    newStepLi.className = 'flex items-center justify-between py-2 border-b border-gray-100 last:border-0';
-    newStepLi.innerHTML = `
-      <span class="math-step font-medium text-gray-800"></span>
-      <span class="text-xs bg-green-100 text-green-800 px-2.5 py-0.5 rounded-full font-semibold uppercase tracking-wider">${nextStep.type}</span>
-    `;
-    historyList.appendChild(newStepLi);
-    window.MathRenderer.renderInline(nextStep.latex, newStepLi.querySelector('.math-step'));
+    appendHistoryItem(nextStep.latex, nextStep.type, false);
 
     // 4. Advance step index
     state.currentStepIdx++;
@@ -163,7 +172,7 @@ export async function autoSolve() {
     // 5. Update main display
     if (state.currentStepIdx >= state.currentEquation.steps.length) {
       updateCurrentEquationDisplay(`x = ${state.currentEquation.solution.toLaTeX()}`);
-      inputElem.placeholder = "Equation fully solved!";
+      inputElem.placeholder = 'Equation fully solved!';
       inputElem.value = '';
     } else {
       updateCurrentEquationDisplay(nextStep.latex);
@@ -181,9 +190,9 @@ export async function autoSolve() {
 export function setupOperatorTooltips() {
   const equationDisplay = document.getElementById('current-equation-display');
   const tooltip = document.getElementById('custom-tooltip');
-  
-  const nextStep = state.currentEquation && state.currentStepIdx < state.currentEquation.steps.length 
-    ? state.currentEquation.steps[state.currentStepIdx] 
+
+  const nextStep = state.currentEquation && state.currentStepIdx < state.currentEquation.steps.length
+    ? state.currentEquation.steps[state.currentStepIdx]
     : null;
   if (!nextStep) return;
 
@@ -198,7 +207,7 @@ export function setupOperatorTooltips() {
     const rect = e.target.getBoundingClientRect();
     const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    
+
     tooltip.style.left = `${rect.left + scrollLeft + (rect.width / 2) - (tooltip.offsetWidth / 2)}px`;
     tooltip.style.top = `${rect.top + scrollTop - tooltip.offsetHeight - 8}px`;
   }
@@ -211,9 +220,9 @@ export function setupOperatorTooltips() {
     el.classList.add('cursor-help', 'hover:text-indigo-600', 'transition-colors');
     el.addEventListener('mouseover', (e) => {
       if (nextStep.type === 'distribute') {
-        showTooltip(e, "Parentheses: Distribute the multiplication outside into all terms inside.");
+        showTooltip(e, 'Parentheses: Distribute the multiplication outside into all terms inside.');
       } else {
-        showTooltip(e, "Parentheses: Groups elements together.");
+        showTooltip(e, 'Parentheses: Groups elements together.');
       }
     });
     el.addEventListener('mouseout', hideTooltip);
@@ -237,7 +246,7 @@ export function setupOperatorTooltips() {
   fractions.forEach(el => {
     el.classList.add('cursor-help', 'hover:text-indigo-600', 'transition-colors');
     el.addEventListener('mouseover', (e) => {
-      showTooltip(e, "Fraction: Represents division. Multiply both sides by the denominator to clear it.");
+      showTooltip(e, 'Fraction: Represents division. Multiply both sides by the denominator to clear it.');
     });
     el.addEventListener('mouseout', hideTooltip);
   });
@@ -245,7 +254,7 @@ export function setupOperatorTooltips() {
   relOps.forEach(el => {
     el.classList.add('cursor-help', 'hover:text-indigo-600', 'transition-colors');
     el.addEventListener('mouseover', (e) => {
-      showTooltip(e, "Equals: Keep both sides balanced by applying identical operations to LHS and RHS.");
+      showTooltip(e, 'Equals: Keep both sides balanced by applying identical operations to LHS and RHS.');
     });
     el.addEventListener('mouseout', hideTooltip);
   });
@@ -255,33 +264,25 @@ export function submitCurrentStepAsCorrect(keepHintsOpen = false) {
   if (!state.currentEquation || state.currentStepIdx >= state.currentEquation.steps.length) return;
   const nextStep = state.currentEquation.steps[state.currentStepIdx];
   const inputEl = document.getElementById('step-input');
-  
+
   const errEl = document.getElementById('step-error-message');
   errEl.classList.add('hidden');
   errEl.textContent = '';
-  
-  const historyList = document.getElementById('history-list');
-  const newStepLi = document.createElement('li');
-  newStepLi.className = 'flex items-center justify-between py-2 border-b border-gray-100 last:border-0';
-  newStepLi.innerHTML = `
-    <span class="math-step font-medium text-gray-800"></span>
-    <span class="text-xs bg-green-100 text-green-800 px-2.5 py-0.5 rounded-full font-semibold uppercase tracking-wider">${nextStep.type}</span>
-  `;
-  historyList.appendChild(newStepLi);
 
-  window.MathRenderer.renderInline(nextStep.latex, newStepLi.querySelector('.math-step'));
+  appendHistoryItem(nextStep.latex, nextStep.type, false);
 
   // Advance state
   state.currentStepIdx++;
-  state.hintStepIdx = state.currentStepIdx; // Reset hint tracking to new active step
-  
+  state.hintStepIdx = state.currentStepIdx;
+  state.lastTabStepIdx = -1;
+
   if (!keepHintsOpen) {
     hideVisualExplanation();
   }
-  
+
   if (state.currentStepIdx >= state.currentEquation.steps.length) {
     inputEl.disabled = true;
-    inputEl.placeholder = "Equation fully solved!";
+    inputEl.placeholder = 'Equation fully solved!';
     inputEl.value = '';
     updateCurrentEquationDisplay(`x = ${state.currentEquation.solution.toLaTeX()}`);
   } else {
@@ -326,13 +327,22 @@ export function initSolverUIEvents() {
       }
     }
 
-    // Handle Tab Autocomplete / Hints
+    // Two-Stage Tab Hint / Fill Behavior:
+    // 1st Tab: Open & auto-play visual explanation without spoiling input
+    // 2nd Tab (while open for current step): Fill expected step answer into input
     if (e.key === 'Tab') {
       e.preventDefault();
       if (!state.currentEquation || state.currentStepIdx >= state.currentEquation.steps.length) return;
 
-      // Animate and show visual explanation for the step at hintStepIdx
-      triggerVisualExplanation(state.hintStepIdx);
+      const explanationContainer = document.getElementById('visual-explanation-container');
+      const isAlreadyOpen = explanationContainer && !explanationContainer.classList.contains('hidden');
+
+      if (!isAlreadyOpen || state.lastTabStepIdx !== state.currentStepIdx) {
+        state.lastTabStepIdx = state.currentStepIdx;
+        triggerVisualExplanation(state.hintStepIdx, true);
+      } else {
+        fillCurrentStepAnswer();
+      }
     }
   });
 
@@ -349,11 +359,11 @@ export function initSolverUIEvents() {
   document.getElementById('btn-mode-solver').addEventListener('click', function() {
     this.classList.remove('bg-white', 'text-gray-700', 'border', 'border-gray-300');
     this.classList.add('bg-primary', 'text-white');
-    
+
     const btnGen = document.getElementById('btn-mode-generator');
     btnGen.classList.remove('bg-primary', 'text-white');
     btnGen.classList.add('bg-white', 'text-gray-700', 'border', 'border-gray-300');
-    
+
     document.getElementById('mode-solver-container').classList.remove('hidden');
     document.getElementById('mode-generator-container').classList.add('hidden');
   });
@@ -361,11 +371,11 @@ export function initSolverUIEvents() {
   document.getElementById('btn-mode-generator').addEventListener('click', function() {
     this.classList.remove('bg-white', 'text-gray-700', 'border', 'border-gray-300');
     this.classList.add('bg-primary', 'text-white');
-    
+
     const btnSolv = document.getElementById('btn-mode-solver');
     btnSolv.classList.remove('bg-primary', 'text-white');
     btnSolv.classList.add('bg-white', 'text-gray-700', 'border', 'border-gray-300');
-    
+
     document.getElementById('mode-solver-container').classList.add('hidden');
     document.getElementById('mode-generator-container').classList.remove('hidden');
   });

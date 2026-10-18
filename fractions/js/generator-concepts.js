@@ -1,11 +1,9 @@
 import { Fraction } from '../../shared/js/fraction.js';
 
 export function generateConceptsProblem() {
-    // Randomly choose between fraction categorization, LCM, GCD, and Simplify
     const rand = Math.random();
 
     if (rand < 0.25) {
-        // Generate two numbers for LCM between 2 and 12
         let num1 = Math.floor(Math.random() * 8) + 2;
         let num2 = Math.floor(Math.random() * 8) + 2;
         while (num1 === num2) {
@@ -13,18 +11,25 @@ export function generateConceptsProblem() {
         }
 
         const lcm = Fraction.lcm(num1, num2);
-        
-        const steps = [];
-        steps.push({
+        const m1 = lcm / num1;
+        const m2 = lcm / num2;
+
+        const steps = [{
             type: 'find_lcm',
             lcd: lcm,
             tex: `\\text{LCM of } ${num1} \\text{ and } ${num2} \\text{ is } ${lcm}`,
             expectedInput: lcm.toString(),
             animationFrames: [
-                `\\text{LCM}(${num1}, ${num2})`,
-                `\\text{LCM}(\\color{red}{${num1}}, \\color{blue}{${num2}}) \\rightarrow ${lcm}`
+                `\\text{LCM}(\\htmlId{a}{${num1}}, \\htmlId{b}{${num2}})`,
+                `\\htmlId{a}{${num1}} \\textcolor{#4f46e5}{\\times ${m1}} = \\textcolor{#4f46e5}{\\htmlId{lcm1}{${lcm}}}, \\quad \\htmlId{b}{${num2}} \\textcolor{#4f46e5}{\\times ${m2}} = \\textcolor{#4f46e5}{\\htmlId{lcm2}{${lcm}}}`,
+                `\\text{LCM}(\\htmlId{a}{${num1}}, \\htmlId{b}{${num2}}) = \\textcolor{#4f46e5}{\\htmlId{lcm1}{${lcm}}}`
+            ],
+            frameCaptions: [
+                `1. Find the Least Common Multiple of ${num1} and ${num2}`,
+                `2. ${num1} × ${m1} = ${lcm} and ${num2} × ${m2} = ${lcm}`,
+                `3. Smallest shared multiple is ${lcm}`
             ]
-        });
+        }];
 
         return {
             topic: 'concepts',
@@ -32,30 +37,33 @@ export function generateConceptsProblem() {
             texInitial: `\\text{Find LCM of } ${num1} \\text{ and } ${num2}`
         };
     } else if (rand < 0.50) {
-        // Generate two numbers for GCD
-        const factor = Math.floor(Math.random() * 5) + 2; // 2 to 6
+        const factor = Math.floor(Math.random() * 5) + 2;
         let n1 = Math.floor(Math.random() * 5) + 1;
         let n2 = Math.floor(Math.random() * 5) + 1;
-        while (n1 === n2 || Fraction.gcd(n1, n2) > 1) { // Ensure no other common factors
+        while (n1 === n2 || Fraction.gcd(n1, n2) > 1) {
             n2 = Math.floor(Math.random() * 5) + 1;
         }
-        
-        let num1 = n1 * factor;
-        let num2 = n2 * factor;
 
+        const num1 = n1 * factor;
+        const num2 = n2 * factor;
         const gcd = Fraction.gcd(num1, num2);
-        
-        const steps = [];
-        steps.push({
+
+        const steps = [{
             type: 'find_gcd',
             gcd: gcd,
             tex: `\\text{GCF of } ${num1} \\text{ and } ${num2} \\text{ is } ${gcd}`,
             expectedInput: gcd.toString(),
             animationFrames: [
-                `\\text{GCF}(${num1}, ${num2})`,
-                `\\text{GCF}(\\color{red}{${num1}}, \\color{blue}{${num2}}) \\rightarrow ${gcd}`
+                `\\text{GCF}(\\htmlId{a}{${num1}}, \\htmlId{b}{${num2}})`,
+                `\\htmlId{a}{${num1}} = \\textcolor{#4f46e5}{\\htmlId{g1}{${gcd}}} \\times ${n1}, \\quad \\htmlId{b}{${num2}} = \\textcolor{#4f46e5}{\\htmlId{g2}{${gcd}}} \\times ${n2}`,
+                `\\text{GCF}(\\htmlId{a}{${num1}}, \\htmlId{b}{${num2}}) = \\textcolor{#4f46e5}{\\htmlId{g1}{${gcd}}}`
+            ],
+            frameCaptions: [
+                `1. Find the Greatest Common Factor of ${num1} and ${num2}`,
+                `2. Factor both numbers by ${gcd}`,
+                `3. Greatest Common Factor is ${gcd}`
             ]
-        });
+        }];
 
         return {
             topic: 'concepts',
@@ -63,28 +71,29 @@ export function generateConceptsProblem() {
             texInitial: `\\text{Find GCF of } ${num1} \\text{ and } ${num2}`
         };
     } else if (rand < 0.75) {
-        // Simplify fraction
-        let den = Math.floor(Math.random() * 8) + 4; // 4 to 11
-        let num = Math.floor(Math.random() * (den - 2)) + 2; // 2 to den-1
-        
-        // Ensure they have a common factor by multiplying both by a random factor
-        const factor = Math.floor(Math.random() * 3) + 2; // 2 to 4
+        let den = Math.floor(Math.random() * 8) + 4;
+        let num = Math.floor(Math.random() * (den - 2)) + 2;
+        const factor = Math.floor(Math.random() * 3) + 2;
         num *= factor;
         den *= factor;
 
-        const f1 = new Fraction(num, den); // This simplifies it internally
-        
-        const steps = [];
-        steps.push({
+        const f1 = new Fraction(num, den);
+
+        const steps = [{
             type: 'simplify_concept',
             tex: `${f1.toTeX()}`,
             expectedInput: f1.d === 1 ? f1.n.toString() : `${f1.n}/${f1.d}`,
             animationFrames: [
-                `\\frac{${num}}{${den}}`,
-                `\\frac{${num} \\div \\color{blue}{${factor}}}{${den} \\div \\color{blue}{${factor}}}`,
-                `${f1.toTeX()}`
+                `\\frac{\\htmlId{n1}{${num}}}{\\htmlId{d1}{${den}}}`,
+                `\\frac{\\htmlId{n1}{${num}} \\textcolor{#4f46e5}{\\div \\htmlId{f1}{${factor}}}}{\\htmlId{d1}{${den}} \\textcolor{#4f46e5}{\\div \\htmlId{f2}{${factor}}}}`,
+                `\\frac{\\htmlId{n1}{${f1.n}}}{\\htmlId{d1}{${f1.d}}}`
+            ],
+            frameCaptions: [
+                `1. Start with fraction ${num}/${den}`,
+                `2. Divide top and bottom by GCF (${factor})`,
+                `3. Simplified fraction is ${f1.n}/${f1.d}`
             ]
-        });
+        }];
 
         return {
             topic: 'concepts',
@@ -93,53 +102,60 @@ export function generateConceptsProblem() {
         };
     }
 
-    // Original fraction categorization logic
     const isProper = Math.random() < 0.5;
     let f1;
-    
+
     if (isProper) {
         f1 = new Fraction(Math.floor(Math.random() * 4) + 1, Math.floor(Math.random() * 5) + 3);
         if (f1.n >= f1.d) f1.n = f1.d - 1;
     } else {
         f1 = new Fraction(Math.floor(Math.random() * 10) + 5, Math.floor(Math.random() * 4) + 2);
-        if (f1.n < f1.d) f1.n += f1.d; // Ensure improper
+        if (f1.n < f1.d) f1.n += f1.d;
     }
-    
-    // Ensure it's fully simplified for the prompt
+
     f1.simplify();
-    
+
     const steps = [];
-    
-    // Step 1: Categorize
+    const cmpSymbol = isProper ? '<' : '\\ge';
+
     steps.push({
         type: 'categorize',
         tex: `\\text{This is an } \\textbf{${isProper ? 'proper' : 'improper'}} \\text{ fraction.}`,
         expectedInput: isProper ? 'proper' : 'improper',
         animationFrames: [
-            // Frame 1: show the fraction
-            `\\htmlId{frac}{\\frac{${f1.n}}{${f1.d}}}`,
-            // Frame 2: highlight numerator
-            `\\htmlId{frac}{\\frac{\\htmlId{num}{\\color{red}{${f1.n}}}}{${f1.d}}}`,
-            // Frame 3: highlight denominator
-            `\\htmlId{frac}{\\frac{${f1.n}}{\\htmlId{den}{\\color{blue}{${f1.d}}}}}`
+            `\\frac{\\htmlId{num}{${f1.n}}}{\\htmlId{den}{${f1.d}}}`,
+            `\\textcolor{#dc2626}{\\htmlId{num}{${f1.n}}} ${cmpSymbol} \\textcolor{#4f46e5}{\\htmlId{den}{${f1.d}}}`,
+            `\\frac{\\htmlId{num}{${f1.n}}}{\\htmlId{den}{${f1.d}}} \\rightarrow \\textcolor{#4f46e5}{\\text{${isProper ? 'proper' : 'improper'}}}`
+        ],
+        frameCaptions: [
+            `1. Examine numerator (${f1.n}) and denominator (${f1.d})`,
+            `2. Compare top (${f1.n}) vs. bottom (${f1.d})`,
+            `3. Since ${f1.n} ${isProper ? '<' : '≥'} ${f1.d}, it is ${isProper ? 'proper' : 'improper'}`
         ]
     });
-    
+
     if (!isProper) {
-        // Step 2: Convert to mixed
         const w = Math.floor(f1.n / f1.d);
         const rem = f1.n % f1.d;
-        
+
         let finalInput = w.toString();
         if (rem !== 0) finalInput += ` ${rem}/${f1.d}`;
-        
+
         steps.push({
             type: 'convert_mixed',
             tex: f1.toTeX(true),
-            expectedInput: finalInput, // e.g. "2 1/4"
+            expectedInput: finalInput,
             animationFrames: [
-                `\\htmlId{frac}{\\frac{${f1.n}}{${f1.d}}}`,
-                `\\htmlId{w}{${w}} \\htmlId{frac}{\\frac{${rem}}{${f1.d}}}`
+                `\\frac{\\htmlId{num}{${f1.n}}}{\\htmlId{den}{${f1.d}}}`,
+                `\\htmlId{num}{${f1.n}} \\div \\htmlId{den}{${f1.d}} = \\textcolor{#4f46e5}{\\htmlId{w}{${w}}} \\text{ R } \\textcolor{#4f46e5}{\\htmlId{rem}{${rem}}}`,
+                rem !== 0
+                    ? `\\htmlId{w}{${w}} \\frac{\\htmlId{rem}{${rem}}}{\\htmlId{den}{${f1.d}}}`
+                    : `\\htmlId{w}{${w}}`
+            ],
+            frameCaptions: [
+                `1. Start with improper fraction ${f1.n}/${f1.d}`,
+                `2. Divide ${f1.n} ÷ ${f1.d} = ${w} with remainder ${rem}`,
+                `3. Write as mixed number: ${finalInput}`
             ]
         });
     }

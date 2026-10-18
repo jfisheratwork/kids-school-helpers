@@ -94,35 +94,51 @@
           }
         },
         {
-          name: "Verify Tab Key Cycles Hints (No Autoplay)",
+          name: "Verify Two-Stage Tab Key (1st Tab Autoplays Visual Hint, 2nd Tab Fills Answer)",
           fn: async (iframeWin, iframeDoc) => {
             const input = iframeDoc.getElementById('step-input');
             const explanationContainer = iframeDoc.getElementById('visual-explanation-container');
             const display = iframeDoc.getElementById('visual-explanation-display');
+            const caption = iframeDoc.getElementById('anim-frame-caption');
             const playBtn = iframeDoc.getElementById('btn-anim-play');
+            const fillBtn = iframeDoc.getElementById('btn-anim-fill');
 
-            if (!input || !explanationContainer) throw new Error("Solver elements not found");
-            if (playBtn) throw new Error("Play button was expected to be removed from the DOM");
+            if (!input || !explanationContainer || !playBtn || !fillBtn || !caption) {
+              throw new Error("Unified animation player elements not found");
+            }
 
-            // Focus and trigger Tab key
+            // Focus and trigger 1st Tab key
+            input.value = '';
             input.focus();
             const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
             input.dispatchEvent(tabEvent);
 
             // Verify explanation box is visible
-            if (explanationContainer.classList.contains('hidden')) throw new Error("Visual explanation container remained hidden on Tab press");
+            if (explanationContainer.classList.contains('hidden')) {
+              throw new Error("Visual explanation container remained hidden on 1st Tab press");
+            }
             
             // Wait brief moment for rendering
-            await new Promise(r => setTimeout(r, 100));
+            await new Promise(r => setTimeout(r, 150));
 
-            // Verify KaTeX math rendered in the explanation frame
+            // Verify KaTeX math and caption rendered in the explanation frame
             if (!display.querySelector('.katex')) throw new Error("Explanation frame did not render KaTeX");
+            if (!caption.textContent.trim()) throw new Error("Frame caption did not populate");
 
-            // Verify that the animation is NOT playing automatically
-            if (iframeWin.animPlaying) throw new Error("Animation expected to NOT autoplay");
+            // Verify that the animation IS playing automatically on 1st Tab
+            if (!iframeWin.animPlaying) throw new Error("Animation expected to autoplay on 1st Tab press");
 
-            // Verify that the text box remains empty (did not change)
-            if (input.value !== '') throw new Error(`Tab key expected to leave input box empty, but it got: "${input.value}"`);
+            // Verify that the text box remains empty on 1st Tab
+            if (input.value !== '') throw new Error(`1st Tab key expected to leave input box empty, but got: "${input.value}"`);
+
+            // Trigger 2nd Tab key while visual explanation is open -> should fill expected step answer
+            input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+            await new Promise(r => setTimeout(r, 50));
+
+            if (!input.value.trim()) {
+              throw new Error("2nd Tab key expected to fill the step answer into the input box, but it remained empty");
+            }
+            input.value = '';
           }
         },
         {

@@ -48,14 +48,90 @@
   }
 }
 
-/* Dynamic View Transition Duration */
+/* Dynamic View Transition Styling & Smooth Token Morphing */
 :root {
-  --transition-duration: 4.0s;
+  --morph-duration: 0.65s;
+  --transition-duration: 2.5s;
+  /* Disable root snapshot so non-transitioned inputs and controls remain interactive */
+  view-transition-name: none;
 }
+
+::view-transition {
+  pointer-events: none;
+}
+
+[style*="view-transition-name"] {
+  display: inline-block;
+  width: fit-content;
+}
+
+::view-transition-group(.math-token),
 html.slow-transition::view-transition-group(*) {
-  animation-duration: var(--transition-duration) !important;
+  animation-duration: var(--morph-duration) !important;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1) !important;
 }
+
+::view-transition-old(.math-token),
+::view-transition-new(.math-token),
 html.slow-transition::view-transition-old(*),
 html.slow-transition::view-transition-new(*) {
-  animation-duration: var(--transition-duration) !important;
+  animation-duration: var(--morph-duration) !important;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1) !important;
+  height: 100%;
+}
+
+/* Entry & exit animations for newly introduced or canceled math tokens */
+::view-transition-new(.math-token):only-child {
+  animation-name: math-token-enter !important;
+  animation-duration: var(--morph-duration) !important;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+::view-transition-old(.math-token):only-child {
+  animation-name: math-token-exit !important;
+  animation-duration: calc(var(--morph-duration) * 0.75) !important;
+  animation-timing-function: ease-in !important;
+}
+
+@keyframes math-token-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes math-token-exit {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+@keyframes math-step-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.25);
+  }
+}
+
+.math-Input-filled-pulse {
+  animation: math-step-pulse 0.7s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }

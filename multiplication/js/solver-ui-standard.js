@@ -1,7 +1,5 @@
-// Standard Solver UI
-
 import { generateStandardProblem } from './generator-standard.js';
-import { attachHintListener, playNextHint } from './hints-player-standard.js';
+import { attachHintListener, hideStandardAnimation } from './hints-player-standard.js';
 import { ViewTransitions } from '../../shared/js/view-transitions.js';
 
 let currentProblem = null;
@@ -21,12 +19,13 @@ export function initStandardSolver() {
 }
 
 function startNewProblem() {
-    const topDigits = parseInt(document.getElementById('config-top-digits').value);
-    const bottomDigits = parseInt(document.getElementById('config-bottom-digits').value);
+    const topDigits = parseInt(document.getElementById('config-top-digits').value, 10);
+    const bottomDigits = parseInt(document.getElementById('config-bottom-digits').value, 10);
     const decimalConfig = document.getElementById('config-decimals').value;
 
     currentProblem = generateStandardProblem(topDigits, bottomDigits, decimalConfig);
     currentStepIndex = 0;
+    hideStandardAnimation();
 
     ViewTransitions.update(document.getElementById('standard-math-grid'), 'mult_', () => {
         renderGrid();
@@ -44,91 +43,115 @@ function startNewProblem() {
 
 function renderGrid() {
     const gridContainer = document.getElementById('standard-math-grid');
-    gridContainer.innerHTML = '';
+    gridContainer.replaceChildren();
 
     const totalCols = currentProblem.gridCols + 1;
 
-    // Create Table
-    let html = `<table class="border-collapse mx-auto" style="table-layout: fixed;"><tbody>`;
+    const table = document.createElement('table');
+    table.className = 'border-collapse mx-auto';
+    table.style.tableLayout = 'fixed';
+    const tbody = document.createElement('tbody');
 
     // Carries row
-    html += `<tr>`;
+    const carryTr = document.createElement('tr');
     for (let i = 1; i <= totalCols; i++) {
-        html += `<td class="p-0 pb-1 align-bottom h-10 w-8" id="carry-col-${i}"><div class="flex flex-col-reverse items-center justify-start h-full gap-0"></div></td>`;
+        const td = document.createElement('td');
+        td.className = 'p-0 pb-1 align-bottom h-10 w-8';
+        td.id = `carry-col-${i}`;
+        const inner = document.createElement('div');
+        inner.className = 'flex flex-col-reverse items-center justify-start h-full gap-0';
+        td.appendChild(inner);
+        carryTr.appendChild(td);
     }
-    html += `</tr>`;
+    tbody.appendChild(carryTr);
 
     // Top Number
-    html += `<tr>`;
-    let topStartCol = totalCols - currentProblem.topStr.length + 1;
+    const topTr = document.createElement('tr');
+    const topStartCol = totalCols - currentProblem.topStr.length + 1;
     for (let i = 1; i <= totalCols; i++) {
+        const td = document.createElement('td');
+        td.id = `top-digit-${i}`;
+        td.className = 'p-0 text-center align-middle h-10 w-8 text-2xl';
         if (i >= topStartCol && i < topStartCol + currentProblem.topStr.length) {
-            let idx = i - topStartCol;
+            const idx = i - topStartCol;
             let text = currentProblem.topStr[idx];
             if (currentProblem.decTop > 0 && idx === currentProblem.topStr.length - currentProblem.decTop - 1) {
                 text += '.';
             }
-            html += `<td id="top-digit-${i}" class="p-0 text-center align-middle h-10 w-8 text-2xl">${text}</td>`;
-        } else {
-            html += `<td id="top-digit-${i}" class="p-0 text-center align-middle h-10 w-8 text-2xl"></td>`;
+            td.textContent = text;
         }
+        topTr.appendChild(td);
     }
-    html += `</tr>`;
+    tbody.appendChild(topTr);
 
     // Bottom Number
-    html += `<tr>`;
-    let bottomStartCol = totalCols - currentProblem.bottomStr.length + 1;
+    const bottomTr = document.createElement('tr');
+    const bottomStartCol = totalCols - currentProblem.bottomStr.length + 1;
     let signCol = Math.min(topStartCol, bottomStartCol) - 1;
     if (signCol < 1) signCol = 1;
-
-    let borderStartCol = Math.min(topStartCol, bottomStartCol);
+    const borderStartCol = Math.min(topStartCol, bottomStartCol);
 
     for (let i = 1; i <= totalCols; i++) {
-        let borderClass = (i >= borderStartCol) ? "border-b-2 border-gray-700" : "";
+        const borderClass = (i >= borderStartCol) ? 'border-b-2 border-gray-700' : '';
+        const td = document.createElement('td');
+        td.className = `p-0 text-center align-middle h-10 w-8 text-2xl ${borderClass}`.trim();
 
         if (i === signCol) {
-            html += `<td class="p-0 text-center align-middle h-10 w-8 text-2xl ${borderClass}">&times;</td>`;
+            td.textContent = '×';
         } else if (i >= bottomStartCol && i < bottomStartCol + currentProblem.bottomStr.length) {
-            let idx = i - bottomStartCol;
+            td.id = `bottom-digit-${i}`;
+            const idx = i - bottomStartCol;
             let text = currentProblem.bottomStr[idx];
             if (currentProblem.decBottom > 0 && idx === currentProblem.bottomStr.length - currentProblem.decBottom - 1) {
                 text += '.';
             }
-            html += `<td id="bottom-digit-${i}" class="p-0 text-center align-middle h-10 w-8 text-2xl ${borderClass}">${text}</td>`;
+            td.textContent = text;
         } else {
-            html += `<td id="bottom-digit-${i}" class="p-0 text-center align-middle h-10 w-8 text-2xl ${borderClass}"></td>`;
+            td.id = `bottom-digit-${i}`;
         }
+        bottomTr.appendChild(td);
     }
-    html += `</tr>`;
+    tbody.appendChild(bottomTr);
 
     // Empty containers for partial products
     for (let rowIdx = 0; rowIdx < currentProblem.bottomStr.length; rowIdx++) {
-        html += `<tr id="pp-row-${rowIdx}">`;
+        const ppTr = document.createElement('tr');
+        ppTr.id = `pp-row-${rowIdx}`;
         for (let c = 1; c <= totalCols; c++) {
-            html += `<td class="p-0 text-center align-middle h-10 w-8 text-xl text-blue-600 font-medium" id="pp-cell-${rowIdx}-${c}"></td>`;
+            const td = document.createElement('td');
+            td.className = 'p-0 text-center align-middle h-10 w-8 text-xl text-blue-600 font-medium';
+            td.id = `pp-cell-${rowIdx}-${c}`;
+            ppTr.appendChild(td);
         }
-        html += `</tr>`;
+        tbody.appendChild(ppTr);
     }
 
     if (currentProblem.bottomStr.length > 1) {
-        // Addition carries row
-        html += `<tr id="add-carry-row">`;
+        const addCarryTr = document.createElement('tr');
+        addCarryTr.id = 'add-carry-row';
         for (let c = 1; c <= totalCols; c++) {
-            html += `<td class="p-0 text-center align-bottom h-4 w-8 text-xs text-red-500 font-bold" id="add-carry-cell-${c}"></td>`;
+            const td = document.createElement('td');
+            td.className = 'p-0 text-center align-bottom h-4 w-8 text-xs text-red-500 font-bold';
+            td.id = `add-carry-cell-${c}`;
+            addCarryTr.appendChild(td);
         }
-        html += `</tr>`;
+        tbody.appendChild(addCarryTr);
     }
 
     // Final sum containers
-    html += `<tr id="final-row" style="display: none;">`;
+    const finalTr = document.createElement('tr');
+    finalTr.id = 'final-row';
+    finalTr.style.display = 'none';
     for (let c = 1; c <= totalCols; c++) {
-        let extraClass = "border-t-2 border-gray-700";
-        html += `<td class="p-0 text-center align-middle h-10 w-8 text-2xl text-green-600 font-bold ${extraClass}" id="final-cell-${c}"></td>`;
+        const td = document.createElement('td');
+        td.className = 'p-0 text-center align-middle h-10 w-8 text-2xl text-green-600 font-bold border-t-2 border-gray-700';
+        td.id = `final-cell-${c}`;
+        finalTr.appendChild(td);
     }
-    html += `</tr>`;
+    tbody.appendChild(finalTr);
 
-    html += `</tbody></table>`;
-    gridContainer.innerHTML = html;
+    table.appendChild(tbody);
+    gridContainer.appendChild(table);
 }
 
 function processAutoSteps() {
@@ -150,21 +173,20 @@ function updateHint() {
     highlightActiveDigits(step);
 
     if (!step) {
-        hintDiv.innerHTML = `Great job! You solved it!`;
+        hintDiv.textContent = 'Great job! You solved it!';
         return;
     }
 
     if (step.type === 'multiply_digit' || step.type === 'multiply_digit_last') {
-        hintDiv.innerHTML = `Multiply ${step.bDigit} &times; ${step.tDigit}${step.carryIn ? ` and add the carry ${step.carryIn}` : ''}. Type the ones digit below.`;
-        if (step.type === 'multiply_digit_last') {
-            hintDiv.innerHTML = `Multiply ${step.bDigit} &times; ${step.tDigit}${step.carryIn ? ` and add the carry ${step.carryIn}` : ''}. Type the full result below.`;
-        }
+        hintDiv.textContent = step.type === 'multiply_digit_last'
+            ? `Multiply ${step.bDigit} × ${step.tDigit}${step.carryIn ? ` and add the carry ${step.carryIn}` : ''}. Type the full result below.`
+            : `Multiply ${step.bDigit} × ${step.tDigit}${step.carryIn ? ` and add the carry ${step.carryIn}` : ''}. Type the ones digit below.`;
     } else if (step.type === 'add_placeholder') {
-        hintDiv.innerHTML = `Moving to the next row. We need a zero placeholder! Type 0.`;
+        hintDiv.textContent = 'Moving to the next row. We need a zero placeholder! Type 0.';
     } else if (step.type === 'final_add_digit') {
-        hintDiv.innerHTML = `Add the column ${step.carryIn > 0 ? `including the carry of ${step.carryIn}` : ''}. Type the ones digit below.`;
+        hintDiv.textContent = `Add the column${step.carryIn > 0 ? ` including the carry of ${step.carryIn}` : ''}. Type the ones digit below.`;
     } else if (step.type === 'place_decimal') {
-        hintDiv.innerHTML = `Now place the decimal! There are ${step.decCount} decimal places total in the problem. Type the final answer with the decimal point.`;
+        hintDiv.textContent = `Now place the decimal! There are ${step.decCount} decimal places total in the problem. Type the final answer with the decimal point.`;
     }
 }
 
@@ -172,20 +194,19 @@ function handleInput(e) {
     if (e.key === 'Enter') {
         const val = e.target.value.trim();
         const step = currentProblem.steps[currentStepIndex];
+        if (!step) return;
 
         if (val === step.expectedInput) {
-            // Correct!
             document.getElementById('standard-step-error').classList.add('hidden');
             e.target.value = '';
+            hideStandardAnimation();
 
             const gridContainer = document.getElementById('standard-math-grid');
-            
+
             ViewTransitions.update(gridContainer, 'mult_', () => {
-                // Adjust col indices by +1 because we added a column on the left
                 if (step.type === 'multiply_digit' || step.type === 'multiply_digit_last') {
                     if (step.type === 'multiply_digit_last') {
-                        // Populate full result spanning cells
-                        let resStr = step.fullResult;
+                        const resStr = step.fullResult;
                         let targetCol = step.targetCol + 1;
                         for (let i = resStr.length - 1; i >= 0; i--) {
                             const cell = document.getElementById(`pp-cell-${step.rowIndex}-${targetCol}`);
@@ -208,7 +229,12 @@ function handleInput(e) {
                     }
                 } else if (step.type === 'add_placeholder') {
                     const cell = document.getElementById(`pp-cell-${step.rowIndex}-${step.targetCol + 1}`);
-                    if (cell) cell.innerHTML = `<span class="placeholder-animate">${step.expectedInput}</span>`;
+                    if (cell) {
+                        const span = document.createElement('span');
+                        span.className = 'placeholder-animate';
+                        span.textContent = step.expectedInput;
+                        cell.replaceChildren(span);
+                    }
                 } else if (step.type === 'final_add_digit') {
                     document.getElementById('final-row').style.display = 'table-row';
                     const cell = document.getElementById(`final-cell-${step.targetCol + 1}`);
@@ -223,7 +249,6 @@ function handleInput(e) {
                     }
                 } else if (step.type === 'place_decimal') {
                     if (step.isSingleRow) {
-                        // For single row, place the decimal in the first partial product row
                         const cell = document.getElementById(`pp-cell-0-${step.targetCol + 1}`);
                         if (cell) cell.textContent += '.';
                     } else {
@@ -231,7 +256,7 @@ function handleInput(e) {
                         if (cell) cell.textContent += '.';
                     }
                 }
-                
+
                 currentStepIndex++;
                 processAutoSteps();
                 updateHint();
@@ -242,14 +267,13 @@ function handleInput(e) {
             });
         } else {
             const err = document.getElementById('standard-step-error');
-            err.textContent = "Incorrect, try again or press Tab for a hint.";
+            err.textContent = 'Incorrect, try again or press Tab for a hint.';
             err.classList.remove('hidden');
         }
     }
 }
 
 function highlightActiveDigits(step) {
-    // Clear previous highlights
     document.querySelectorAll('.active-digit-highlight').forEach(el => {
         el.classList.remove('active-digit-highlight', 'bg-orange-200/75', 'rounded-md');
     });

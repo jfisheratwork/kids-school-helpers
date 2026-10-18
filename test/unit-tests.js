@@ -274,6 +274,20 @@ testSuite.describe("Equation Generator and Validator Suite", () => {
     assert.ok(!valIsolateSub.valid);
     assert.ok(valIsolateSub.errorMsg.includes("divide by the coefficient"));
   });
+
+  testSuite.it("should generate 3-frame leaf htmlId animationFrames and frameCaptions on every Pre-Algebra step", () => {
+    const eq = EquationGenerator.generate({ steps: 5, allowNegatives: true });
+    assert.equal(eq.steps.length, 5);
+    eq.steps.forEach((step, idx) => {
+      assert.ok(Array.isArray(step.animationFrames), `Step ${idx} missing animationFrames`);
+      assert.equal(step.animationFrames.length, 3, `Step ${idx} should have 3 animationFrames`);
+      assert.ok(Array.isArray(step.frameCaptions), `Step ${idx} missing frameCaptions`);
+      assert.equal(step.frameCaptions.length, 3, `Step ${idx} should have 3 frameCaptions`);
+      step.animationFrames.forEach((frame, fIdx) => {
+        assert.ok(frame.includes('\\htmlId{'), `Step ${idx} frame ${fIdx} missing leaf \\htmlId token`);
+      });
+    });
+  });
 });
 
 if (typeof window !== 'undefined') {
