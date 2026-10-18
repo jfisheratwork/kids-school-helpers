@@ -33,32 +33,45 @@ function getStepHintDescription(step) {
     }
 }
 
-export function attachFractionsHintListener(inputElement, getProblemFn, getStepIndexFn) {
+export function attachFractionsHintListener(stepInput, finalInput, getProblemFn, getStepIndexFn) {
     player.bindEvents();
 
-    inputElement.addEventListener('keydown', (e) => {
-        if (e.key === 'Tab') {
-            e.preventDefault();
-            playNextFractionsHint(getProblemFn(), getStepIndexFn(), inputElement);
-        }
-    });
+    const bindTab = (el) => {
+        if (!el) return;
+        el.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                playNextFractionsHint(getProblemFn(), getStepIndexFn(), stepInput, finalInput, el);
+            }
+        });
+    };
+
+    bindTab(stepInput);
+    bindTab(finalInput);
 }
 
-export function playNextFractionsHint(problem, stepIndex, inputElement) {
+export function playNextFractionsHint(problem, stepIndex, stepInput, finalInput, sourceInput) {
     if (!problem || stepIndex >= problem.steps.length) return;
 
+    const isFinalStep = stepIndex === problem.steps.length - 1;
+    const targetFinal = isFinalStep || (sourceInput && finalInput && sourceInput === finalInput);
     const step = problem.steps[stepIndex];
+    const finalStep = problem.steps[problem.steps.length - 1];
     const hintBox = document.getElementById('fractions-hint-content');
 
     const fillFn = () => {
-        SharedAnimationPlayer.fillInputElement(inputElement, step.expectedInput);
+        if (targetFinal && finalInput) {
+            SharedAnimationPlayer.fillInputElement(finalInput, finalStep.expectedInput);
+        } else if (stepInput) {
+            SharedAnimationPlayer.fillInputElement(stepInput, step.expectedInput);
+        }
     };
 
     player.handleTabKey({
         stepKey: `fractions-step-${stepIndex}-${step.type}`,
         frames: step.animationFrames || [step.tex],
         captions: step.frameCaptions || [],
-        autoplay: true,
+        autoplay: false,
         fillInputFn: fillFn,
         onOpen: () => {
             if (!hintBox) return;
@@ -71,13 +84,13 @@ export function playNextFractionsHint(problem, stepIndex, inputElement) {
 
             const formatDiv = document.createElement('div');
             formatDiv.className = 'mt-2 text-xs text-indigo-600 bg-white/80 border border-indigo-100 rounded px-2.5 py-1.5';
-            formatDiv.textContent = 'Press Tab again (or click Fill Answer) to populate the input box.';
+            formatDiv.textContent = 'Press Next → or Tab to advance frames, then press Tab on the final frame (or click Fill Answer) to populate the box.';
             hintBox.appendChild(formatDiv);
         }
     });
 }
 
-export function triggerVisualExplanation(frames, autoplay = true, captions = []) {
+export function triggerVisualExplanation(frames, autoplay = false, captions = []) {
     player.play(frames, { autoplay, captions });
 }
 

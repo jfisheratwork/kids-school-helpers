@@ -94,21 +94,23 @@
           }
         },
         {
-          name: "Verify Two-Stage Tab Key (1st Tab Autoplays Visual Hint, 2nd Tab Fills Answer)",
+          name: "Verify Manual-Advance Multi-Tab Key (1st Tab Opens Paused, Subsequent Tabs Advance Frames, Final Tab Fills Answer)",
           fn: async (iframeWin, iframeDoc) => {
             const input = iframeDoc.getElementById('step-input');
+            const finalInput = iframeDoc.getElementById('final-answer-input');
             const explanationContainer = iframeDoc.getElementById('visual-explanation-container');
             const display = iframeDoc.getElementById('visual-explanation-display');
             const caption = iframeDoc.getElementById('anim-frame-caption');
             const playBtn = iframeDoc.getElementById('btn-anim-play');
             const fillBtn = iframeDoc.getElementById('btn-anim-fill');
 
-            if (!input || !explanationContainer || !playBtn || !fillBtn || !caption) {
-              throw new Error("Unified animation player elements not found");
+            if (!input || !finalInput || !explanationContainer || !playBtn || !fillBtn || !caption) {
+              throw new Error("Unified animation player or dual input elements not found");
             }
 
             // Focus and trigger 1st Tab key
             input.value = '';
+            finalInput.value = '';
             input.focus();
             const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
             input.dispatchEvent(tabEvent);
@@ -125,20 +127,36 @@
             if (!display.querySelector('.katex')) throw new Error("Explanation frame did not render KaTeX");
             if (!caption.textContent.trim()) throw new Error("Frame caption did not populate");
 
-            // Verify that the animation IS playing automatically on 1st Tab
-            if (!iframeWin.animPlaying) throw new Error("Animation expected to autoplay on 1st Tab press");
+            // Verify that the animation is NOT playing automatically on 1st Tab
+            if (iframeWin.animPlaying) throw new Error("Animation must NOT autoplay by default on 1st Tab press");
 
             // Verify that the text box remains empty on 1st Tab
             if (input.value !== '') throw new Error(`1st Tab key expected to leave input box empty, but got: "${input.value}"`);
 
-            // Trigger 2nd Tab key while visual explanation is open -> should fill expected step answer
+            // Advance through each remaining frame using Tab key
+            const totalFrames = iframeWin.animFrames.length;
+            for (let f = 1; f < totalFrames; f++) {
+              input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+              await new Promise(r => setTimeout(r, 50));
+              if (iframeWin.animIndex !== f) {
+                throw new Error(`Expected Tab press to advance animIndex to ${f}, got ${iframeWin.animIndex}`);
+              }
+              if (input.value !== '') {
+                throw new Error(`Input should remain empty while advancing to frame ${f + 1}/${totalFrames}`);
+              }
+            }
+
+            // Trigger Tab on final frame -> should fill expected step answer
             input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
             await new Promise(r => setTimeout(r, 50));
 
-            if (!input.value.trim()) {
-              throw new Error("2nd Tab key expected to fill the step answer into the input box, but it remained empty");
+            const isSingleStep = iframeWin.currentEquation.steps.length === 1;
+            const populatedVal = isSingleStep ? finalInput.value.trim() : input.value.trim();
+            if (!populatedVal) {
+              throw new Error("Tab key on final frame expected to fill the answer into the target input box, but it remained empty");
             }
             input.value = '';
+            finalInput.value = '';
           }
         },
         {
@@ -417,27 +435,63 @@
                 await new Promise(r => setTimeout(r, 400)); // wait for transitions and submit logic
                 
                 const historyList = iframeDoc.getElementById('history-list');
-                if (historyList.children.length !== i + 2) {
-                  throw new Error(`Auto-solve failed: history list has ${historyList.children.length} items, expected ${i + 2}`);
+                const completedItems = historyList.querySelectorAll('[data-step-status="completed"]');
+                if (completedItems.length !== i + 1) {
+                  throw new Error(`Auto-solve failed: history list has ${completedItems.length} completed steps, expected ${i + 1}`);
                 }
                 if (explanationContainer.classList.contains('hidden')) {
                   throw new Error("Hint container closed unexpectedly after auto-solve click");
                 }
               } else {
-                // On the very last step of the equation, the Next button shouldn't advance to a new hint step
-                // (It should be disabled or not do anything). We must manually submit the final answer, or 
-                // wait, does btnNext auto-solve the final step?
-                // The logic says: else if (animIndex === ... && hintStepIdx < steps.length - 1)
-                // So it DOES NOT auto-solve the final step! The user must manually solve the final step, or we need to add auto-solve for final step too?
-                // Let's test just typing it for the final step.
-                input.value = step.latex;
-                input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+                // Submit the final step via the Final Answer input box
+                const finalInput = iframeDoc.getElementById('final-answer-input') || input;
+                finalInput.value = step.latex;
+                finalInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
                 await new Promise(r => setTimeout(r, 600));
               }
             }
 
             if (!input.disabled || input.placeholder !== "Equation fully solved!") {
               throw new Error("Equation did not complete full solve correctly.");
+            }
+          }
+        },
+        {
+          name: "Verify Upfront Multi-Step Progression & Direct Final Answer Completion",
+          fn: async (iframeWin, iframeDoc) => {
+            const btnSolv = iframeDoc.getElementById('btn-mode-solver');
+            if (btnSolv) { btnSolv.click(); await new Promise(r => setTimeout(r, 200)); }
+
+            const stepsSel = iframeDoc.getElementById('config-steps');
+            if (stepsSel) { stepsSel.value = "3"; }
+            iframeWin.generateNew();
+            await new Promise(r => setTimeout(r, 300));
+
+            const eq = iframeWin.currentEquation;
+            const historyList = iframeDoc.getElementById('history-list');
+            const finalInput = iframeDoc.getElementById('final-answer-input');
+            const stepInput = iframeDoc.getElementById('step-input');
+
+            if (!eq || eq.steps.length !== 3) throw new Error("Expected a 3-step equation");
+            if (!finalInput || !stepInput) throw new Error("Dual input elements not found");
+
+            // All 3 planned steps + 1 Original row should be rendered upfront
+            if (historyList.children.length !== eq.steps.length + 1) {
+              throw new Error(`Expected ${eq.steps.length + 1} upfront rows in #history-list, got ${historyList.children.length}`);
+            }
+
+            // Directly submit the final answer on Step 0 to solve immediately and populate all intermediate steps
+            const finalStep = eq.steps[eq.steps.length - 1];
+            finalInput.value = finalStep.latex;
+            finalInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+            await new Promise(r => setTimeout(r, 300));
+
+            const completedRows = historyList.querySelectorAll('[data-step-status="completed"]');
+            if (completedRows.length !== eq.steps.length) {
+              throw new Error(`Expected all ${eq.steps.length} steps to be marked completed after Final Answer submit, got ${completedRows.length}`);
+            }
+            if (!stepInput.disabled || !finalInput.disabled) {
+              throw new Error("Both partial and final inputs should be disabled after equation is solved");
             }
           }
         }

@@ -137,8 +137,14 @@ export function triggerHint() {
     const player = ensurePlayer();
     const stepKey = `${state.currentMode}-${currentStep}`;
 
-    // If already open for this step, second Tab triggers fill/plot action
+    // If already open for this step, advance frames manually; on the final frame, trigger fill/plot action
     if (player.isOpen() && player.currentStepKey === stepKey) {
+        if (Array.isArray(player.frames) && player.index < player.frames.length - 1) {
+            player.pause();
+            player.index++;
+            player.showFrame(player.index);
+            return;
+        }
         applyExpectedStepAction(player);
         return;
     }
@@ -174,5 +180,5 @@ export function triggerHint() {
     }
 
     const { frames, captions } = buildStepFrames(eq, currentStep);
-    player.loadFrames(frames, captions, true, stepKey);
+    player.loadFrames(frames, captions, false, stepKey);
 }

@@ -68,7 +68,7 @@ export function updateHints(stepIdx = state.currentStepIdx) {
 
   const tipP = document.createElement('p');
   tipP.className = 'mt-1 text-xs text-indigo-500 italic';
-  tipP.textContent = 'Tip: Press Tab for visual animation, press Tab again to fill the answer.';
+  tipP.textContent = 'Tip: Press Tab or Next → to step through the visual frames, then press Tab on the last frame to fill the answer.';
 
   hintContent.appendChild(headerDiv);
   hintContent.appendChild(bodyP);
@@ -168,16 +168,31 @@ export function startAnimTimer() {
   }, speedSeconds * 1000);
 }
 
-export function fillCurrentStepAnswer() {
+export function fillCurrentStepAnswer(sourceInput = null) {
   if (!state.currentEquation) return;
   const targetIdx = state.currentStepIdx < state.currentEquation.steps.length
     ? state.currentStepIdx
     : state.hintStepIdx;
   const step = state.currentEquation.steps[targetIdx];
+  const finalStep = state.currentEquation.steps[state.currentEquation.steps.length - 1];
   if (!step) return;
-  copyAnswerToInput(step.latex);
-  const inputEl = document.getElementById('step-input');
-  SharedAnimationPlayer.fillInputElement(inputEl, step.latex);
+
+  const stepInputEl = document.getElementById('step-input');
+  const finalInputEl = document.getElementById('final-answer-input');
+  const isFinalStep = targetIdx === state.currentEquation.steps.length - 1;
+  const fromFinal = sourceInput && finalInputEl && sourceInput === finalInputEl;
+
+  if (fromFinal && finalInputEl && finalStep) {
+    copyAnswerToInput(finalStep.latex, finalInputEl);
+    SharedAnimationPlayer.fillInputElement(finalInputEl, finalStep.latex);
+  } else if (isFinalStep && finalInputEl) {
+    copyAnswerToInput(step.latex, finalInputEl);
+    if (stepInputEl) stepInputEl.value = step.latex;
+    SharedAnimationPlayer.fillInputElement(finalInputEl, step.latex);
+  } else {
+    copyAnswerToInput(step.latex, stepInputEl);
+    SharedAnimationPlayer.fillInputElement(stepInputEl, step.latex);
+  }
 }
 
 export function triggerVisualExplanation(stepIdx = state.currentStepIdx, autoplay = false) {

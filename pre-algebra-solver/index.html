@@ -127,26 +127,46 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Left/Center Column: History and Active Input -->
                 <div class="md:col-span-2 space-y-6 flex flex-col">
-                    <!-- History Container -->
+                    <!-- Step Progression & History Container -->
                     <div id="history-container" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-h-[200px]">
-                        <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">History</h2>
-                        <ul id="history-list" class="space-y-3 text-lg">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Step-by-Step Progression</h2>
+                            <span id="steps-progress-summary" class="text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full"></span>
+                        </div>
+                        <ul id="history-list" class="space-y-2.5 text-lg">
                             <li class="text-gray-400 italic text-sm">No steps recorded yet.</li>
                         </ul>
                     </div>
 
                     <!-- Active Input Container -->
                     <div id="active-input-container" class="bg-white rounded-xl shadow-md border-l-4 border-primary p-6 relative flex-grow">
-                        <h2 class="text-sm font-semibold text-primary uppercase tracking-wider mb-4">Current Step</h2>
+                        <div class="flex items-center justify-between mb-3">
+                            <h2 class="text-sm font-semibold text-primary uppercase tracking-wider">Current Equation</h2>
+                            <span class="text-xs text-gray-500">Press <kbd class="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-[11px] font-mono">Tab</kbd> to step through visual hints &amp; fill</span>
+                        </div>
                         <div class="text-center mb-6">
                             <!-- LaTeX will render here -->
                             <div id="current-equation-display" class="text-2xl font-medium tracking-wide min-h-[3rem] flex items-center justify-center select-none"></div>
                         </div>
-                        <div class="relative">
-                            <input type="text" id="step-input" placeholder="Type your next step here... (Press Tab for hint)" 
-                                class="w-full text-center text-xl p-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-mono" autocomplete="off">
-                            <div id="step-error-message" class="text-red-500 text-sm mt-2 text-center hidden font-medium"></div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="flex flex-col">
+                                <label for="step-input" class="text-xs font-bold uppercase tracking-wider text-indigo-700 mb-1.5 flex items-center justify-between">
+                                    <span>1. Partial / Step Result</span>
+                                    <span class="text-[11px] font-normal text-indigo-500">Next equation step</span>
+                                </label>
+                                <input type="text" id="step-input" placeholder="e.g. 2x = 10 (Enter or Tab)"
+                                    class="w-full text-center text-lg p-3.5 border-2 border-indigo-200 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-mono" autocomplete="off">
+                            </div>
+                            <div class="flex flex-col">
+                                <label for="final-answer-input" class="text-xs font-bold uppercase tracking-wider text-emerald-700 mb-1.5 flex items-center justify-between">
+                                    <span>2. Final Answer</span>
+                                    <span class="text-[11px] font-normal text-emerald-600">Solved for x</span>
+                                </label>
+                                <input type="text" id="final-answer-input" placeholder="e.g. x = 5 (Enter or Tab)"
+                                    class="w-full text-center text-lg p-3.5 border-2 border-emerald-200 rounded-lg focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 transition-all font-mono" autocomplete="off">
+                            </div>
                         </div>
+                        <div id="step-error-message" class="text-red-500 text-sm mt-3 text-center hidden font-medium"></div>
                     </div>
                 </div>
 

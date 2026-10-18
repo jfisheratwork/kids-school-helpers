@@ -17,7 +17,11 @@
 * **Unified Step-by-Step Visual Explanation (`SharedAnimationPlayer` & `ViewTransitions`):**
   * All solvers use a 3-frame KaTeX `\htmlId` token-morphing sequence driven by the View Transitions API (`shared/js/view-transitions.js`) and `SharedAnimationPlayer` (`shared/js/animation-player.js`).
   * **Decoupled Morph vs. Playback Timing:** CSS `--morph-duration` (`0.65s`, `cubic-bezier(0.22, 1, 0.36, 1)`) controls the physical token glide, while `--transition-duration` (`#anim-speed`, default `2.5s`) controls the pause interval between frames.
-  * **Two-Stage `Tab` Key Behavior:**
-    * **1st `Tab` Press:** Opens `#visual-explanation-container`, displays the frame caption (`#anim-frame-caption`), and auto-plays the 3-frame visual breakdown without spoiling the student's input box.
-    * **2nd `Tab` Press (or `#btn-anim-fill`):** Fills the expected step answer into the active input box (or plots the expected point in Graphing Lines) with an indigo highlight pulse (`.math-Input-filled-pulse`).
+  * **Manual-Advance `Tab` Key & Playback Behavior (`autoplay: false` by default):**
+    * Animations never auto-play by default when opened; students advance frames via the `Next →` / `← Back` buttons or repeated `Tab` presses (or opt into timer playback via `Play`).
+    * **1st `Tab` Press:** Opens `#visual-explanation-container` on Frame 1 (`1/N`, paused) without spoiling the student's input boxes.
+    * **Subsequent `Tab` Presses (while `frameIndex < totalFrames - 1`):** Advances the visual explanation to the next frame (`2/N`, `3/N`, etc.).
+    * **Final `Tab` Press (on last frame, or `#btn-anim-fill`):** Intelligently fills the expected answer into the **Partial Result** input (for intermediate steps) or **Final Answer** input (for the final step or when focused in the final answer box) with an indigo highlight pulse (`.math-Input-filled-pulse`).
+* **Dual Inputs & Upfront Multi-Step Progression (`spec/03-dual-input-and-step-progression.md`):**
+  * Solvers in `fractions/` and `pre-algebra-solver/` provide both a **Partial / Step Result** input and a **Final Answer** input below the equation, plus an upfront vertical list of all planned steps above the inputs that fills in as steps are completed.
 * **Responsiveness:** Layout must reflow linearly for mobile viewports, shifting the Hint System Container below the Active Input Container.

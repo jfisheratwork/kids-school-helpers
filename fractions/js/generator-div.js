@@ -4,10 +4,13 @@ export function generateDivProblem(fractionType) {
     let f1, f2;
 
     if (fractionType === 'proper') {
-        f1 = new Fraction(Math.floor(Math.random() * 4) + 1, Math.floor(Math.random() * 4) + 2);
-        f2 = new Fraction(Math.floor(Math.random() * 4) + 1, Math.floor(Math.random() * 4) + 2);
-        if (f1.n >= f1.d) f1.n = f1.d - 1;
-        if (f2.n >= f2.d) f2.n = f2.d - 1;
+        const d1 = Math.floor(Math.random() * 4) + 2;
+        const n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
+        f1 = new Fraction(n1, d1);
+
+        const d2 = Math.floor(Math.random() * 4) + 2;
+        const n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
+        f2 = new Fraction(n2, d2);
     } else {
         f1 = new Fraction(Math.floor(Math.random() * 10) + 3, Math.floor(Math.random() * 4) + 2);
         f2 = new Fraction(Math.floor(Math.random() * 5) + 1, Math.floor(Math.random() * 4) + 2);

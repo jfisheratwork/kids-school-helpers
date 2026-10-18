@@ -13,10 +13,11 @@ Across all interactive solvers in **Kids School Helpers** (`pre-algebra-solver`,
    - Each frame includes a concise human-readable caption (`#anim-frame-caption`) explaining the exact transformation occurring in that frame.
 3. **Decoupled Morph Speed vs. Reading Pause**:
    - **Morph Duration (`--morph-duration: 0.65s`)**: Tokens glide smoothly between positions over `0.65s` using `cubic-bezier(0.22, 1, 0.36, 1)`.
-   - **Frame Pause Delay (`--frame-delay`)**: Controlled by the user's `Delay` slider (`0.5s` to `10.0s`, default `2.5s`), determining how long the player pauses on each frame during auto-play.
-4. **Two-Stage `Tab` Hint Interaction**:
-   - **1st `Tab` Press**: Opens the `#visual-explanation-container` and auto-plays the multi-frame visual explanation from Frame 1 without immediately overwriting the student's input box.
-   - **2nd `Tab` Press** (when the visual explanation for the current step is already visible, or when clicking the **Fill Answer** button `#btn-anim-fill`): Populates the expected answer for the current step into the active input field and focuses it.
+   - **Frame Pause Delay (`--frame-delay`)**: Controlled by the user's `Delay` slider (`0.5s` to `10.0s`, default `2.5s`), determining how long the player pauses on each frame when the user explicitly clicks `Play`.
+4. **Manual-Advance `Tab` Hint Interaction (`autoplay: false` by default)**:
+   - **1st `Tab` Press**: Opens the `#visual-explanation-container` on Frame 1 (`1/N`, paused) without auto-playing or overwriting the student's input box.
+   - **Subsequent `Tab` Presses** (while `index < frames.length - 1`): Advances to the next visual explanation frame (`2/N`, `3/N`, etc.).
+   - **Final `Tab` Press** (when on the final frame of the current step, or when clicking the **Fill Answer** button `#btn-anim-fill`): Intelligently populates the expected answer into the Partial Result input (for intermediate steps) or Final Answer input (for the final step) and focuses it.
 
 ---
 

@@ -1,5 +1,6 @@
 import { initFractionsSolver } from './solver-ui.js';
 import { generateWorksheet } from './worksheet-generator.js';
+import { initFractionsGuide, syncGuideTopic } from './guide.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // Mode Switching
@@ -49,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             fracTypeContainer.classList.remove('hidden');
         }
+        syncGuideTopic(e.target.value);
     });
 
     const wsTopicSelect = document.getElementById('ws-topic');
@@ -59,7 +61,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             wsFracTypeContainer.classList.remove('hidden');
         }
+        syncGuideTopic(e.target.value);
     });
+
+    // Initialize Explainer Guide
+    initFractionsGuide();
 
     // Initialize Interactive Solver
     initFractionsSolver();

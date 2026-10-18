@@ -15,6 +15,7 @@ local_only/
 test-results.json
 .server.pid
 server.log
+.agents/scripts
 
 # Temporary Debug Screenshots
 UserWalkthrough.md

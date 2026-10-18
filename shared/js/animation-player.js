@@ -48,7 +48,7 @@ export class SharedAnimationPlayer {
         SharedAnimationPlayer.fillInputElement(inputEl, value);
     }
 
-    loadFrames(rawFrames, captions = [], autoplay = true, stepKey = null) {
+    loadFrames(rawFrames, captions = [], autoplay = false, stepKey = null) {
         this.play(rawFrames, { captions, autoplay, stepKey });
     }
 
@@ -339,9 +339,10 @@ export class SharedAnimationPlayer {
     }
 
     /**
-     * Unified Two-Stage Tab Handler:
-     * - 1st Tab on a step: Opens the visual explanation and auto-plays frames without filling input.
-     * - 2nd Tab on the same step (while visible): Fills the expected answer into the input and focuses it.
+     * Manual-Advance Multi-Tab Handler:
+     * - 1st Tab on a step: Opens the visual explanation on Frame 1 (paused, autoplay=false) without filling input.
+     * - Subsequent Tab presses (while index < frames.length - 1): Advances to the next visual frame.
+     * - Final Tab press (when on the last frame of the step): Fills the expected answer into the target input and focuses it.
      */
     handleTabKey(options = {}) {
         const {
@@ -352,7 +353,7 @@ export class SharedAnimationPlayer {
             expectedAnswer,
             inputEl,
             onOpen,
-            autoplay = true,
+            autoplay = false,
             pulseContainer = null
         } = options;
 
@@ -366,6 +367,7 @@ export class SharedAnimationPlayer {
                 }
             };
 
+        this.onFillInput = effectiveFillFn;
         const alreadyOpenForStep = this.isVisible() && this.activeStepKey === stepKey;
 
         if (!alreadyOpenForStep) {
@@ -379,11 +381,18 @@ export class SharedAnimationPlayer {
                 onFillInput: effectiveFillFn,
                 pulseContainer
             });
-            return { stage: 'visual', filled: false };
+            return { stage: 'visual', frameIndex: this.index, filled: false };
+        }
+
+        this.stopTimer();
+        if (this.index < this.frames.length - 1) {
+            this.index++;
+            this.showFrame(this.index);
+            return { stage: 'advance', frameIndex: this.index, filled: false };
         }
 
         effectiveFillFn();
-        return { stage: 'fill', filled: true };
+        return { stage: 'fill', frameIndex: this.index, filled: true };
     }
 
     static fillInputElement(inputEl, value) {

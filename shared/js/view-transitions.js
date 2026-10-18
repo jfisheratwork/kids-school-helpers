@@ -40,6 +40,10 @@ export class ViewTransitions {
                 ViewTransitions.applyNames(container, prefix);
             });
 
+            if (transition.ready) {
+                transition.ready.catch(() => {});
+            }
+
             return transition.finished
                 .catch(() => {})
                 .finally(() => {

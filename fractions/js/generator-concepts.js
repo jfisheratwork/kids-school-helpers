@@ -106,8 +106,9 @@ export function generateConceptsProblem() {
     let f1;
 
     if (isProper) {
-        f1 = new Fraction(Math.floor(Math.random() * 4) + 1, Math.floor(Math.random() * 5) + 3);
-        if (f1.n >= f1.d) f1.n = f1.d - 1;
+        const d = Math.floor(Math.random() * 5) + 3;
+        const n = Math.floor(Math.random() * (d - 1)) + 1;
+        f1 = new Fraction(n, d);
     } else {
         f1 = new Fraction(Math.floor(Math.random() * 10) + 5, Math.floor(Math.random() * 4) + 2);
         if (f1.n < f1.d) f1.n += f1.d;
