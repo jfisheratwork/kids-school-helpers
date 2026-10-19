@@ -1,21 +1,37 @@
 import { Fraction } from '../../shared/js/fraction.js';
 
-export function generateAddSubProblem(fractionType) {
+function getDigitRange(digits) {
+    if (digits === 2) return { min: 10, max: 99 };
+    if (digits === 3) return { min: 100, max: 999 };
+    return { min: 2, max: 9 };
+}
+
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+export function generateAddSubProblem(fractionType, digits = 1) {
     let f1, f2;
     const isSub = Math.random() < 0.5;
+    const range = getDigitRange(digits);
 
     if (fractionType === 'proper') {
-        const d1 = Math.floor(Math.random() * 5) + 2;
-        const n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
+        const d1 = getRandomInt(Math.max(range.min, 2), range.max);
+        const n1 = getRandomInt(1, d1 - 1);
         f1 = new Fraction(n1, d1);
 
-        const d2 = Math.floor(Math.random() * 5) + 2;
-        const n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
+        const d2 = getRandomInt(Math.max(range.min, 2), range.max);
+        const n2 = getRandomInt(1, d2 - 1);
         f2 = new Fraction(n2, d2);
     } else {
-        // mixed/improper
-        f1 = new Fraction(Math.floor(Math.random() * 10) + 3, Math.floor(Math.random() * 5) + 2);
-        f2 = new Fraction(Math.floor(Math.random() * 10) + 3, Math.floor(Math.random() * 5) + 2);
+        // mixed/improper: numerator >= denominator
+        const d1 = getRandomInt(Math.max(range.min, 2), range.max);
+        const n1 = d1 + getRandomInt(1, range.max);
+        f1 = new Fraction(n1, d1);
+
+        const d2 = getRandomInt(Math.max(range.min, 2), range.max);
+        const n2 = d2 + getRandomInt(1, range.max);
+        f2 = new Fraction(n2, d2);
     }
 
     // For subtraction, ensure f1 >= f2 so we don't get negative answers

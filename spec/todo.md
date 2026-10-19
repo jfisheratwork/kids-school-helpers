@@ -20,6 +20,10 @@ This file tracks the overarching progress of the `kids-school-helpers` repositor
   - Added dual input boxes (**1. Partial / Step Result** + **2. Final Answer**) and upfront vertical multi-step progression lists across `fractions/`, `pre-algebra-solver/`, `multiplication/` (Standard & Fractions modes), and `division/` (Long Division & Fractions Division modes), supporting immediate full-problem completion when the final answer is entered directly.
   - Fixed initial right-aligned / off-center layout jump in table-based math grids (`shared/js/view-transitions.js` and `shared/css/main.css`) by scoping `view-transition-name` strictly to KaTeX `.enclosing[id]` tokens and adding a smooth `.math-fade-in` (`0.35s ease-out`) container fade-in.
 
+- `[x]` **Phase 7: Multi-Digit Fractions Practice & Custom Variation**
+  - Added **Number Size** dropdown (`Single Digit (1–9)`, `Double Digits (10–99)`, `Triple Digits (100–999)`) to Fractions Practice (`fractions/index.html`) across both Interactive Solver and Worksheet Generator modes.
+  - Scaled fraction generators (`generator-addsub.js`, `generator-mult.js`, `generator-div.js`, `generator-concepts.js`) to generate multi-digit numerators and denominators while preserving valid mathematical reductions and zero-denominator safety.
+
 ## Remaining / Future Enhancements
 - `[ ]` Expand word problem / real-world application modes across modules.
 - `[ ]` Add optional audio/speech synthesis read-aloud support for step captions.

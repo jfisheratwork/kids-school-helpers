@@ -33,18 +33,19 @@ export function initFractionsSolver() {
 export function generateProblemFromConfig() {
     const topic = document.getElementById('config-topic').value;
     const type = document.getElementById('config-fraction-type').value;
+    const digits = parseInt(document.getElementById('config-digit-size')?.value || '1', 10);
 
     switch (topic) {
         case 'concepts':
-            return generateConceptsProblem();
+            return generateConceptsProblem(digits);
         case 'addsub':
-            return generateAddSubProblem(type);
+            return generateAddSubProblem(type, digits);
         case 'multiply':
-            return generateMultProblem(type);
+            return generateMultProblem(type, digits);
         case 'divide':
-            return generateDivProblem(type);
+            return generateDivProblem(type, digits);
         default:
-            return generateAddSubProblem(type);
+            return generateAddSubProblem(type, digits);
     }
 }
 

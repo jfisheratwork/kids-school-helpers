@@ -7,6 +7,7 @@ import { generateDivProblem } from './generator-div.js';
 export function generateWorksheet() {
     const topic = document.getElementById('ws-topic').value;
     const type = document.getElementById('ws-fraction-type').value;
+    const digits = parseInt(document.getElementById('ws-digit-size')?.value || "1", 10);
     const numProblemsStr = document.getElementById('ws-num-problems')?.value || "10";
     const numProblems = parseInt(numProblemsStr, 10);
     const btnPrint = document.getElementById('btn-print-worksheet');
@@ -15,11 +16,11 @@ export function generateWorksheet() {
     for (let i = 0; i < numProblems; i++) {
         let p;
         switch(topic) {
-            case 'concepts': p = generateConceptsProblem(); break;
-            case 'addsub': p = generateAddSubProblem(type); break;
-            case 'multiply': p = generateMultProblem(type); break;
-            case 'divide': p = generateDivProblem(type); break;
-            default: p = generateAddSubProblem(type);
+            case 'concepts': p = generateConceptsProblem(digits); break;
+            case 'addsub': p = generateAddSubProblem(type, digits); break;
+            case 'multiply': p = generateMultProblem(type, digits); break;
+            case 'divide': p = generateDivProblem(type, digits); break;
+            default: p = generateAddSubProblem(type, digits);
         }
         
         let problemTex = p.texInitial;

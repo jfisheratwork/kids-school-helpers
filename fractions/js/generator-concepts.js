@@ -1,13 +1,27 @@
 import { Fraction } from '../../shared/js/fraction.js';
 
-export function generateConceptsProblem() {
+function getDigitRange(digits) {
+    if (digits === 2) return { min: 10, max: 99 };
+    if (digits === 3) return { min: 100, max: 999 };
+    return { min: 2, max: 9 };
+}
+
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+export function generateConceptsProblem(digits = 1) {
     const rand = Math.random();
+    const range = getDigitRange(digits);
 
     if (rand < 0.25) {
-        let num1 = Math.floor(Math.random() * 8) + 2;
-        let num2 = Math.floor(Math.random() * 8) + 2;
+        // LCM: keep numbers reasonably bounded based on digit range
+        const maxLcmBase = digits === 1 ? 9 : (digits === 2 ? 30 : 60);
+        const minLcmBase = digits === 1 ? 2 : (digits === 2 ? 10 : 25);
+        let num1 = getRandomInt(minLcmBase, maxLcmBase);
+        let num2 = getRandomInt(minLcmBase, maxLcmBase);
         while (num1 === num2) {
-            num2 = Math.floor(Math.random() * 8) + 2;
+            num2 = getRandomInt(minLcmBase, maxLcmBase);
         }
 
         const lcm = Fraction.lcm(num1, num2);
@@ -37,11 +51,13 @@ export function generateConceptsProblem() {
             texInitial: `\\text{Find LCM of } ${num1} \\text{ and } ${num2}`
         };
     } else if (rand < 0.50) {
-        const factor = Math.floor(Math.random() * 5) + 2;
-        let n1 = Math.floor(Math.random() * 5) + 1;
-        let n2 = Math.floor(Math.random() * 5) + 1;
+        // GCF
+        const factor = getRandomInt(2, digits === 1 ? 6 : (digits === 2 ? 15 : 25));
+        const maxCo = digits === 1 ? 5 : (digits === 2 ? 12 : 25);
+        let n1 = getRandomInt(1, maxCo);
+        let n2 = getRandomInt(1, maxCo);
         while (n1 === n2 || Fraction.gcd(n1, n2) > 1) {
-            n2 = Math.floor(Math.random() * 5) + 1;
+            n2 = getRandomInt(1, maxCo);
         }
 
         const num1 = n1 * factor;
@@ -71,13 +87,15 @@ export function generateConceptsProblem() {
             texInitial: `\\text{Find GCF of } ${num1} \\text{ and } ${num2}`
         };
     } else if (rand < 0.75) {
-        let den = Math.floor(Math.random() * 8) + 4;
-        let num = Math.floor(Math.random() * (den - 2)) + 2;
-        const factor = Math.floor(Math.random() * 3) + 2;
-        num *= factor;
-        den *= factor;
+        // Simplify fraction
+        const factor = getRandomInt(2, digits === 1 ? 5 : (digits === 2 ? 12 : 25));
+        let baseDen = getRandomInt(Math.max(range.min, 3), range.max);
+        let baseNum = getRandomInt(1, baseDen - 1);
+        let num = baseNum * factor;
+        let den = baseDen * factor;
 
         const f1 = new Fraction(num, den);
+        const actualGcf = Fraction.gcd(num, den);
 
         const steps = [{
             type: 'simplify_concept',
@@ -85,12 +103,12 @@ export function generateConceptsProblem() {
             expectedInput: f1.d === 1 ? f1.n.toString() : `${f1.n}/${f1.d}`,
             animationFrames: [
                 `\\frac{\\htmlId{n1}{${num}}}{\\htmlId{d1}{${den}}}`,
-                `\\frac{\\htmlId{n1}{${num}} \\textcolor{#4f46e5}{\\div \\htmlId{f1}{${factor}}}}{\\htmlId{d1}{${den}} \\textcolor{#4f46e5}{\\div \\htmlId{f2}{${factor}}}}`,
+                `\\frac{\\htmlId{n1}{${num}} \\textcolor{#4f46e5}{\\div \\htmlId{f1}{${actualGcf}}}}{\\htmlId{d1}{${den}} \\textcolor{#4f46e5}{\\div \\htmlId{f2}{${actualGcf}}}}`,
                 `\\frac{\\htmlId{n1}{${f1.n}}}{\\htmlId{d1}{${f1.d}}}`
             ],
             frameCaptions: [
                 `1. Start with fraction ${num}/${den}`,
-                `2. Divide top and bottom by GCF (${factor})`,
+                `2. Divide top and bottom by GCF (${actualGcf})`,
                 `3. Simplified fraction is ${f1.n}/${f1.d}`
             ]
         }];
@@ -106,12 +124,13 @@ export function generateConceptsProblem() {
     let f1;
 
     if (isProper) {
-        const d = Math.floor(Math.random() * 5) + 3;
-        const n = Math.floor(Math.random() * (d - 1)) + 1;
+        const d = getRandomInt(Math.max(range.min, 3), range.max);
+        const n = getRandomInt(1, d - 1);
         f1 = new Fraction(n, d);
     } else {
-        f1 = new Fraction(Math.floor(Math.random() * 10) + 5, Math.floor(Math.random() * 4) + 2);
-        if (f1.n < f1.d) f1.n += f1.d;
+        const d = getRandomInt(Math.max(range.min, 2), range.max);
+        const n = d + getRandomInt(1, range.max);
+        f1 = new Fraction(n, d);
     }
 
     f1.simplify();
