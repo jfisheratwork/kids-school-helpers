@@ -67,3 +67,35 @@ When `Tab` reaches the fill stage (after the final animation frame) or when the 
     - **Completed rows**: Keep their rendered KaTeX partial result permanently visible (e.g., $\text{LCD} = 12$, converted fractions $\frac{3}{12} + \frac{2}{12}$, and final simplified fraction $\frac{5}{12}$).
     - **Active row**: Highlighted with step badge (`Partial Step` or `Final Answer`) and description.
     - **Upcoming rows**: Visible as pending step slots showing what operations follow.
+
+### 4.3 Multiplication Practice (`multiplication/`)
+- **Standard Multiplication Mode (`#mode-standard-container`)**:
+  - Provides dual inputs below the multiplication grid: **1. Partial / Step Result** (`#standard-step-input`) and **2. Final Answer** (`#standard-final-input`).
+  - Pressing `Tab` on the final visual frame fills `#standard-step-input` on intermediate digit/placeholder/addition steps, or fills `#standard-final-input` on the final step (or when `Tab` was pressed inside `#standard-final-input` with `finalProductDisplay`).
+  - Submitting the correct final product (`finalProductDisplay`) in `#standard-final-input` at any point immediately executes and populates all remaining partial product rows, carries, final sum digits, and decimal point in the grid above, marking the problem solved.
+- **Fractions Multiplication Mode (`#mode-fractions-container`)**:
+  - Provides upfront step progression (`#fractions-steps-list`) and dual inputs: **1. Partial / Step Result** (`#fractions-step-input`) and **2. Final Answer** (`#fractions-final-input`).
+
+### 4.4 Division Practice (`division/`)
+- **Long Division Mode (`#mode-long-division-container`)**:
+  - Provides dual inputs below the long division bracket grid: **1. Partial / Step Result** (`#long-division-step-input`) and **2. Final Answer (Quotient)** (`#long-division-final-input`).
+  - Pressing `Tab` on the final visual frame fills `#long-division-step-input` on intermediate divide/multiply/subtract/bring-down steps, or fills `#long-division-final-input` on the final step (or when `Tab` was pressed inside `#long-division-final-input` with `quotientStr`).
+  - Submitting the correct full quotient (`quotientStr`) in `#long-division-final-input` at any point immediately populates all remaining quotient digits, multiplication rows, subtraction remainders, and bring-downs in the long division bracket above, marking the problem solved.
+- **Fractions Division Mode (`#mode-fractions-container`)**:
+  - Provides upfront step progression (`#fractions-steps-list`) and dual inputs: **1. Partial / Step Result** (`#fractions-step-input`) and **2. Final Answer** (`#fractions-final-input`).
+
+---
+
+## 5. Layout-Safe View Transitions & Smooth Fade-In (`shared/js/view-transitions.js` & `shared/css/main.css`)
+
+### 5.1 Root Cause of Initial Right-Aligned / Off-Center Jump
+- Previously, `ViewTransitions.applyNames()` matched `container.querySelectorAll('[id]')` and applied `view-transition-name` to every element with an `id` (including `<tr id="...">` and `<td id="...">` cells inside the Multiplication and Long Division `<table>` grids).
+- Combined with `[style*="view-transition-name"] { display: inline-block; width: fit-content; }` in `shared/css/main.css`, table cells and rows were temporarily forced to `display: inline-block; width: fit-content` for the `0.65s` View Transition duration, collapsing column widths and shifting the grid off-center until `ViewTransitions.clearNames()` removed `view-transition-name` after `0.65s`.
+
+### 5.2 Resolution
+1. **Scope `ViewTransitions.applyNames()` Strictly to KaTeX `\htmlId` Spans**:
+   - Query `container.querySelectorAll('.enclosing[id]')` instead of `[id]`, so structural HTML table cells (`<td>`, `<tr>`) and layout containers are never assigned `math-token` view-transition names.
+2. **Remove Destructive `display: inline-block; width: fit-content` Override**:
+   - Remove `[style*="view-transition-name"] { display: inline-block; width: fit-content; }` from `shared/css/main.css` so elements retain their native display and centering geometry at all times.
+3. **Smooth Container Fade-In (`.math-fade-in`)**:
+   - Apply a gentle opacity fade-in (`0.35s cubic-bezier(0.22, 1, 0.36, 1)`) when rendering new problems or updating grid steps so visual updates appear smoothly centered from frame zero without any horizontal jump.

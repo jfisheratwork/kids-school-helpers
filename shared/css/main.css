@@ -60,9 +60,17 @@
   pointer-events: none;
 }
 
-[style*="view-transition-name"] {
-  display: inline-block;
-  width: fit-content;
+@keyframes math-container-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.math-fade-in {
+  animation: math-container-fade-in 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 ::view-transition-group(.math-token),
@@ -129,6 +137,7 @@ html.slow-transition::view-transition-new(*) {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .math-fade-in,
   ::view-transition-group(*),
   ::view-transition-old(*),
   ::view-transition-new(*) {

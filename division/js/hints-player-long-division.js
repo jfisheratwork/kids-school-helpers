@@ -3,6 +3,8 @@ import { SharedAnimationPlayer } from '../../shared/js/animation-player.js';
 let longDivPlayer = null;
 let lastProblem = null;
 let lastStepIndex = 0;
+let activeInputEl = null;
+let finalInputRef = null;
 
 function ensurePlayer() {
     if (!longDivPlayer) {
@@ -19,15 +21,39 @@ function ensurePlayer() {
             counterId: 'anim-frame-counter',
             transitionPrefix: 'div_anim_',
             onFillRequest: () => {
-                const inputEl = document.getElementById('long-division-step-input');
-                if (lastProblem && lastProblem.steps && lastProblem.steps[lastStepIndex] && inputEl) {
-                    longDivPlayer.fillInput(inputEl, lastProblem.steps[lastStepIndex].expectedInput);
-                }
+                if (!lastProblem || !lastProblem.steps || !lastProblem.steps[lastStepIndex]) return;
+                const targetInput = activeInputEl || document.getElementById('long-division-step-input');
+                if (!targetInput) return;
+
+                const isFinalTarget = targetInput === finalInputRef || targetInput.id === 'long-division-final-input';
+                const expectedVal = isFinalTarget
+                    ? String(lastProblem.quotientStr)
+                    : lastProblem.steps[lastStepIndex].expectedInput;
+                longDivPlayer.fillInput(targetInput, expectedVal);
             }
         });
         longDivPlayer.initEvents();
     }
     return longDivPlayer;
+}
+
+export function attachLongDivisionHintListener(stepInputEl, finalInputEl, getProblemFunc, getStepIndexFunc) {
+    activeInputEl = stepInputEl;
+    finalInputRef = finalInputEl;
+    ensurePlayer();
+
+    const bindTab = (inputEl) => {
+        if (!inputEl) return;
+        inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                playNextHint(getProblemFunc(), getStepIndexFunc(), inputEl);
+            }
+        });
+    };
+
+    bindTab(stepInputEl);
+    bindTab(finalInputEl);
 }
 
 function renderHintCard(hintBox, colorScheme, textContent) {
@@ -47,14 +73,15 @@ function renderHintCard(hintBox, colorScheme, textContent) {
     hintBox.replaceChildren(card);
 }
 
-export function playNextHint(problem, stepIndex) {
+export function playNextHint(problem, stepIndex, sourceInput) {
     if (!problem || stepIndex >= problem.steps.length) return;
     lastProblem = problem;
     lastStepIndex = stepIndex;
+    if (sourceInput) activeInputEl = sourceInput;
 
     const step = problem.steps[stepIndex];
     const hintBox = document.getElementById('long-division-hint-content');
-    const inputElement = document.getElementById('long-division-step-input');
+    const targetInput = activeInputEl || document.getElementById('long-division-step-input');
 
     if (step.type === 'divide_digit') {
         renderHintCard(
@@ -82,13 +109,16 @@ export function playNextHint(problem, stepIndex) {
         );
     }
 
+    const isFinalTarget = targetInput && (targetInput === finalInputRef || targetInput.id === 'long-division-final-input');
+    const expectedAnswer = isFinalTarget ? String(problem.quotientStr) : step.expectedInput;
+
     const player = ensurePlayer();
     player.handleTabKey({
         stepKey: `ld-${stepIndex}`,
         frames: step.animationFrames || [],
         captions: step.frameCaptions || [],
-        expectedAnswer: step.expectedInput,
-        inputEl: inputElement
+        expectedAnswer,
+        inputEl: targetInput
     });
 }
 

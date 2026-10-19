@@ -3,7 +3,9 @@ import { SharedAnimationPlayer } from '../../shared/js/animation-player.js';
 let standardPlayer = null;
 let currentProblemGetter = null;
 let currentStepIndexGetter = null;
-let activeInputEl = null;
+let stepInputEl = null;
+let finalInputEl = null;
+let lastSourceInputEl = null;
 
 function ensurePlayer() {
     if (!standardPlayer) {
@@ -20,11 +22,16 @@ function ensurePlayer() {
             counterId: 'anim-frame-counter',
             transitionPrefix: 'mult_anim_',
             onFillRequest: () => {
-                if (!currentProblemGetter || !currentStepIndexGetter || !activeInputEl) return;
+                if (!currentProblemGetter || !currentStepIndexGetter) return;
                 const prob = currentProblemGetter();
                 const idx = currentStepIndexGetter();
-                if (prob && prob.steps && prob.steps[idx]) {
-                    standardPlayer.fillInput(activeInputEl, prob.steps[idx].expectedInput);
+                if (!prob || !prob.steps || !prob.steps[idx]) return;
+                const isFinal = idx === prob.steps.length - 1;
+                const useFinal = isFinal || (lastSourceInputEl && finalInputEl && lastSourceInputEl === finalInputEl);
+                if (useFinal && finalInputEl) {
+                    standardPlayer.fillInput(finalInputEl, prob.finalProductDisplay || prob.steps[prob.steps.length - 1].expectedInput);
+                } else if (stepInputEl) {
+                    standardPlayer.fillInput(stepInputEl, prob.steps[idx].expectedInput);
                 }
             }
         });
@@ -33,18 +40,25 @@ function ensurePlayer() {
     return standardPlayer;
 }
 
-export function attachHintListener(inputElement, getProblemFunc, getStepIndexFunc) {
+export function attachHintListener(stepInput, finalInput, getProblemFunc, getStepIndexFunc) {
     currentProblemGetter = getProblemFunc;
     currentStepIndexGetter = getStepIndexFunc;
-    activeInputEl = inputElement;
+    stepInputEl = stepInput;
+    finalInputEl = finalInput;
     ensurePlayer();
 
-    inputElement.addEventListener('keydown', (e) => {
-        if (e.key === 'Tab') {
-            e.preventDefault();
-            playNextHint(getProblemFunc(), getStepIndexFunc(), inputElement);
-        }
-    });
+    const bindTab = (el) => {
+        if (!el) return;
+        el.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                playNextHint(getProblemFunc(), getStepIndexFunc(), stepInput, finalInput, el);
+            }
+        });
+    };
+
+    bindTab(stepInput);
+    bindTab(finalInput);
 }
 
 export function hideStandardAnimation() {
@@ -69,9 +83,11 @@ function renderHintCard(hintBox, colorScheme, textContent) {
     hintBox.replaceChildren(card);
 }
 
-export function playNextHint(problem, stepIndex, inputElement) {
+export function playNextHint(problem, stepIndex, stepInput, finalInput, sourceInput) {
     if (!problem || stepIndex >= problem.steps.length) return;
-    activeInputEl = inputElement;
+    stepInputEl = stepInput;
+    finalInputEl = finalInput;
+    lastSourceInputEl = sourceInput || stepInput;
 
     const step = problem.steps[stepIndex];
     const hintBox = document.getElementById('standard-hint-content');
@@ -99,13 +115,21 @@ export function playNextHint(problem, stepIndex, inputElement) {
         );
     }
 
+    const isFinalStep = stepIndex === problem.steps.length - 1;
+    const useFinal = isFinalStep || (sourceInput && finalInput && sourceInput === finalInput);
     const player = ensurePlayer();
     player.handleTabKey({
         stepKey: `std-${stepIndex}`,
         frames: step.animationFrames || [],
         captions: step.frameCaptions || [],
-        expectedAnswer: step.expectedInput,
-        inputEl: inputElement
+        autoplay: false,
+        fillInputFn: () => {
+            if (useFinal && finalInput) {
+                player.fillInput(finalInput, problem.finalProductDisplay || problem.steps[problem.steps.length - 1].expectedInput);
+            } else if (stepInput) {
+                player.fillInput(stepInput, step.expectedInput);
+            }
+        }
     });
 
     if (step.targetCol) {

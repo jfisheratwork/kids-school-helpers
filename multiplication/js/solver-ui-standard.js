@@ -11,11 +11,109 @@ export function initStandardSolver() {
         btnGenerate.addEventListener('click', startNewProblem);
     }
 
-    const input = document.getElementById('standard-step-input');
-    if (input) {
-        input.addEventListener('keydown', handleInput);
-        attachHintListener(input, () => currentProblem, () => currentStepIndex);
+    const stepInput = document.getElementById('standard-step-input');
+    const finalInput = document.getElementById('standard-final-input');
+
+    if (stepInput) {
+        stepInput.addEventListener('keydown', handleStepInput);
     }
+    if (finalInput) {
+        finalInput.addEventListener('keydown', handleFinalInput);
+    }
+    if (stepInput || finalInput) {
+        attachHintListener(stepInput, finalInput, () => currentProblem, () => currentStepIndex);
+    }
+
+    startNewProblem();
+}
+
+function getStandardStepLabel(step) {
+    if (step.type === 'multiply_digit' || step.type === 'multiply_digit_last') {
+        const carryNote = step.carryIn > 0 ? ` + carry ${step.carryIn}` : '';
+        return `Multiply ${step.bDigit} × ${step.tDigit}${carryNote}`;
+    }
+    if (step.type === 'add_placeholder') {
+        return `Row ${step.rowIndex + 1}: Place 0 placeholder`;
+    }
+    if (step.type === 'final_add_digit') {
+        return `Sum column${step.carryIn > 0 ? ` (+ carry ${step.carryIn})` : ''}`;
+    }
+    if (step.type === 'place_decimal') {
+        return `Place decimal (${step.decCount} place${step.decCount === 1 ? '' : 's'})`;
+    }
+    return 'Step';
+}
+
+function renderStandardStepsList() {
+    const listEl = document.getElementById('standard-steps-list');
+    const summaryEl = document.getElementById('standard-steps-summary');
+    if (!listEl || !currentProblem) return;
+
+    const interactiveSteps = currentProblem.steps
+        .map((step, rawIdx) => ({ step, rawIdx }))
+        .filter(item => item.step.type !== 'strike_carries');
+
+    const total = interactiveSteps.length;
+    const completed = interactiveSteps.filter(item => item.rawIdx < currentStepIndex).length;
+    if (summaryEl) {
+        summaryEl.textContent = `${completed} of ${total} completed`;
+    }
+
+    listEl.replaceChildren();
+
+    interactiveSteps.forEach((item, displayIdx) => {
+        const { step, rawIdx } = item;
+        const isDone = rawIdx < currentStepIndex;
+        const isCurrent = rawIdx === currentStepIndex;
+        const isFinal = displayIdx === total - 1;
+
+        const li = document.createElement('li');
+        if (isDone) {
+            li.className = 'flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md bg-emerald-50/70 border border-emerald-200 text-xs';
+        } else if (isCurrent) {
+            li.className = 'flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md bg-indigo-50 border border-indigo-300 shadow-sm text-xs';
+        } else {
+            li.className = 'flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md bg-gray-50/70 border border-gray-200 text-gray-400 text-xs';
+        }
+
+        const leftDiv = document.createElement('div');
+        leftDiv.className = 'flex items-center gap-2 min-w-0';
+
+        const badge = document.createElement('span');
+        badge.className = isDone
+            ? 'w-4 h-4 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0'
+            : isCurrent
+                ? 'w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0'
+                : 'w-4 h-4 rounded-full bg-gray-200 text-gray-600 text-[10px] font-bold flex items-center justify-center shrink-0';
+        badge.textContent = isDone ? '✓' : String(displayIdx + 1);
+
+        const labelSpan = document.createElement('span');
+        labelSpan.className = isDone
+            ? 'font-medium text-emerald-900 truncate'
+            : isCurrent
+                ? 'font-semibold text-indigo-950 truncate'
+                : 'text-gray-500 truncate';
+        labelSpan.textContent = getStandardStepLabel(step);
+
+        leftDiv.appendChild(badge);
+        leftDiv.appendChild(labelSpan);
+
+        const rightSpan = document.createElement('span');
+        if (isDone) {
+            rightSpan.className = 'font-mono font-bold text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-200 shrink-0';
+            rightSpan.textContent = step.expectedInput;
+        } else if (isCurrent) {
+            rightSpan.className = 'font-semibold text-indigo-700 bg-indigo-100 px-1.5 py-0.5 rounded shrink-0';
+            rightSpan.textContent = isFinal ? 'Active (Final)' : 'Active';
+        } else {
+            rightSpan.className = 'text-gray-400 italic shrink-0';
+            rightSpan.textContent = 'Pending';
+        }
+
+        li.appendChild(leftDiv);
+        li.appendChild(rightSpan);
+        listEl.appendChild(li);
+    });
 }
 
 function startNewProblem() {
@@ -31,14 +129,23 @@ function startNewProblem() {
         renderGrid();
         processAutoSteps();
         updateHint();
+        renderStandardStepsList();
     });
 
-    const input = document.getElementById('standard-step-input');
-    input.value = '';
-    input.disabled = false;
-    input.focus();
+    const stepInput = document.getElementById('standard-step-input');
+    const finalInput = document.getElementById('standard-final-input');
+    if (stepInput) {
+        stepInput.value = '';
+        stepInput.disabled = false;
+        stepInput.focus();
+    }
+    if (finalInput) {
+        finalInput.value = '';
+        finalInput.disabled = false;
+    }
 
-    document.getElementById('standard-step-error').classList.add('hidden');
+    const err = document.getElementById('standard-step-error');
+    if (err) err.classList.add('hidden');
 }
 
 function renderGrid() {
@@ -190,86 +297,141 @@ function updateHint() {
     }
 }
 
-function handleInput(e) {
-    if (e.key === 'Enter') {
-        const val = e.target.value.trim();
-        const step = currentProblem.steps[currentStepIndex];
-        if (!step) return;
+function applyStepToGrid(step) {
+    if (!step) return;
+    if (step.type === 'strike_carries') {
+        document.querySelectorAll('.carry-active').forEach(el => {
+            el.classList.remove('carry-active');
+            el.classList.add('strike-through', 'text-gray-400');
+        });
+        return;
+    }
 
-        if (val === step.expectedInput) {
-            document.getElementById('standard-step-error').classList.add('hidden');
-            e.target.value = '';
-            hideStandardAnimation();
-
-            const gridContainer = document.getElementById('standard-math-grid');
-
-            ViewTransitions.update(gridContainer, 'mult_', () => {
-                if (step.type === 'multiply_digit' || step.type === 'multiply_digit_last') {
-                    if (step.type === 'multiply_digit_last') {
-                        const resStr = step.fullResult;
-                        let targetCol = step.targetCol + 1;
-                        for (let i = resStr.length - 1; i >= 0; i--) {
-                            const cell = document.getElementById(`pp-cell-${step.rowIndex}-${targetCol}`);
-                            if (cell) cell.textContent = resStr[i];
-                            targetCol--;
-                        }
-                    } else {
-                        const cell = document.getElementById(`pp-cell-${step.rowIndex}-${step.targetCol + 1}`);
-                        if (cell) cell.textContent = step.resultDigit;
-
-                        if (step.carryOut > 0 && step.carryCol) {
-                            const carryContainer = document.getElementById(`carry-col-${step.carryCol + 1}`);
-                            if (carryContainer) {
-                                const carrySpan = document.createElement('span');
-                                carrySpan.className = 'carry-digit carry-active carry-animate font-bold';
-                                carrySpan.textContent = step.carryOut;
-                                carryContainer.appendChild(carrySpan);
-                            }
-                        }
-                    }
-                } else if (step.type === 'add_placeholder') {
-                    const cell = document.getElementById(`pp-cell-${step.rowIndex}-${step.targetCol + 1}`);
-                    if (cell) {
-                        const span = document.createElement('span');
-                        span.className = 'placeholder-animate';
-                        span.textContent = step.expectedInput;
-                        cell.replaceChildren(span);
-                    }
-                } else if (step.type === 'final_add_digit') {
-                    document.getElementById('final-row').style.display = 'table-row';
-                    const cell = document.getElementById(`final-cell-${step.targetCol + 1}`);
-                    if (cell) cell.textContent = step.resultDigit;
-
-                    if (step.carryOut > 0 && step.carryCol) {
-                        const carryCell = document.getElementById(`add-carry-cell-${step.carryCol + 1}`);
-                        if (carryCell) {
-                            carryCell.textContent = step.carryOut;
-                            carryCell.classList.add('carry-animate');
-                        }
-                    }
-                } else if (step.type === 'place_decimal') {
-                    if (step.isSingleRow) {
-                        const cell = document.getElementById(`pp-cell-0-${step.targetCol + 1}`);
-                        if (cell) cell.textContent += '.';
-                    } else {
-                        const cell = document.getElementById(`final-cell-${step.targetCol + 1}`);
-                        if (cell) cell.textContent += '.';
-                    }
-                }
-
-                currentStepIndex++;
-                processAutoSteps();
-                updateHint();
-
-                if (currentStepIndex >= currentProblem.steps.length) {
-                    e.target.disabled = true;
-                }
-            });
+    if (step.type === 'multiply_digit' || step.type === 'multiply_digit_last') {
+        if (step.type === 'multiply_digit_last') {
+            const resStr = step.fullResult;
+            let targetCol = step.targetCol + 1;
+            for (let i = resStr.length - 1; i >= 0; i--) {
+                const cell = document.getElementById(`pp-cell-${step.rowIndex}-${targetCol}`);
+                if (cell) cell.textContent = resStr[i];
+                targetCol--;
+            }
         } else {
-            const err = document.getElementById('standard-step-error');
-            err.textContent = 'Incorrect, try again or press Tab for a hint.';
-            err.classList.remove('hidden');
+            const cell = document.getElementById(`pp-cell-${step.rowIndex}-${step.targetCol + 1}`);
+            if (cell) cell.textContent = step.resultDigit;
+
+            if (step.carryOut > 0 && step.carryCol) {
+                const carryContainer = document.getElementById(`carry-col-${step.carryCol + 1}`);
+                if (carryContainer) {
+                    const carrySpan = document.createElement('span');
+                    carrySpan.className = 'carry-digit carry-active carry-animate font-bold';
+                    carrySpan.textContent = step.carryOut;
+                    carryContainer.appendChild(carrySpan);
+                }
+            }
         }
+    } else if (step.type === 'add_placeholder') {
+        const cell = document.getElementById(`pp-cell-${step.rowIndex}-${step.targetCol + 1}`);
+        if (cell) {
+            const span = document.createElement('span');
+            span.className = 'placeholder-animate';
+            span.textContent = step.expectedInput;
+            cell.replaceChildren(span);
+        }
+    } else if (step.type === 'final_add_digit') {
+        document.getElementById('final-row').style.display = 'table-row';
+        const cell = document.getElementById(`final-cell-${step.targetCol + 1}`);
+        if (cell) cell.textContent = step.resultDigit;
+
+        if (step.carryOut > 0 && step.carryCol) {
+            const carryCell = document.getElementById(`add-carry-cell-${step.carryCol + 1}`);
+            if (carryCell) {
+                carryCell.textContent = step.carryOut;
+                carryCell.classList.add('carry-animate');
+            }
+        }
+    } else if (step.type === 'place_decimal') {
+        if (step.isSingleRow) {
+            const cell = document.getElementById(`pp-cell-0-${step.targetCol + 1}`);
+            if (cell && !cell.textContent.includes('.')) cell.textContent += '.';
+        } else {
+            const cell = document.getElementById(`final-cell-${step.targetCol + 1}`);
+            if (cell && !cell.textContent.includes('.')) cell.textContent += '.';
+        }
+    }
+}
+
+function disableStandardInputs() {
+    const stepInput = document.getElementById('standard-step-input');
+    const finalInput = document.getElementById('standard-final-input');
+    if (stepInput) {
+        stepInput.value = '';
+        stepInput.disabled = true;
+    }
+    if (finalInput) {
+        finalInput.value = '';
+        finalInput.disabled = true;
+    }
+}
+
+function handleStepInput(e) {
+    if (e.key !== 'Enter') return;
+    const val = e.target.value.trim();
+    const step = currentProblem && currentProblem.steps[currentStepIndex];
+    if (!step) return;
+
+    if (val === step.expectedInput) {
+        document.getElementById('standard-step-error').classList.add('hidden');
+        e.target.value = '';
+        hideStandardAnimation();
+
+        const gridContainer = document.getElementById('standard-math-grid');
+        ViewTransitions.update(gridContainer, 'mult_', () => {
+            applyStepToGrid(step);
+            currentStepIndex++;
+            processAutoSteps();
+            updateHint();
+            renderStandardStepsList();
+
+            if (currentStepIndex >= currentProblem.steps.length) {
+                disableStandardInputs();
+            } else if (currentStepIndex === currentProblem.steps.length - 1) {
+                const finalInput = document.getElementById('standard-final-input');
+                if (finalInput) finalInput.focus();
+            }
+        });
+    } else {
+        const err = document.getElementById('standard-step-error');
+        err.textContent = 'Incorrect partial step, try again or press Tab for a hint.';
+        err.classList.remove('hidden');
+    }
+}
+
+function handleFinalInput(e) {
+    if (e.key !== 'Enter') return;
+    if (!currentProblem || currentStepIndex >= currentProblem.steps.length) return;
+
+    const val = e.target.value.trim();
+    const expectedFinal = currentProblem.finalProductDisplay;
+
+    if (val === expectedFinal) {
+        document.getElementById('standard-step-error').classList.add('hidden');
+        hideStandardAnimation();
+
+        const gridContainer = document.getElementById('standard-math-grid');
+        ViewTransitions.update(gridContainer, 'mult_', () => {
+            for (let i = currentStepIndex; i < currentProblem.steps.length; i++) {
+                applyStepToGrid(currentProblem.steps[i]);
+            }
+            currentStepIndex = currentProblem.steps.length;
+            updateHint();
+            renderStandardStepsList();
+            disableStandardInputs();
+        });
+    } else {
+        const err = document.getElementById('standard-step-error');
+        err.textContent = 'Incorrect final answer. Work out the partial steps on the left or press Tab for a hint.';
+        err.classList.remove('hidden');
     }
 }
 

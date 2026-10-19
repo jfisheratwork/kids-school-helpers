@@ -17,8 +17,8 @@ This file tracks the overarching progress of the `kids-school-helpers` repositor
 - `[x]` **Phase 6: Manual-Advance Animations, Dual Inputs & Upfront Multi-Step Progression (`spec/03-dual-input-and-step-progression.md`)**
   - Disabled default animation autoplay (`autoplay: false`) across `SharedAnimationPlayer` (`shared/js/animation-player.js`), `fractions`, `pre-algebra-solver`, and `graphing-lines`.
   - Updated `Tab` key workflow to open paused on Frame `1/N`, step through frames `2..N` on subsequent `Tab` presses, and intelligently populate either the **Partial / Step Result** or **Final Answer** input on the final frame.
-  - Added dual input boxes (**1. Partial / Step Result** + **2. Final Answer**) below equations in `fractions/` and `pre-algebra-solver/`, supporting immediate full-problem completion when the final answer is entered directly.
-  - Added upfront vertical multi-step progression lists in `fractions/` (`#fractions-steps-list`) and `pre-algebra-solver/` (`#history-list`) displaying all planned steps (`Step 1..N`) and retaining completed KaTeX step results.
+  - Added dual input boxes (**1. Partial / Step Result** + **2. Final Answer**) and upfront vertical multi-step progression lists across `fractions/`, `pre-algebra-solver/`, `multiplication/` (Standard & Fractions modes), and `division/` (Long Division & Fractions Division modes), supporting immediate full-problem completion when the final answer is entered directly.
+  - Fixed initial right-aligned / off-center layout jump in table-based math grids (`shared/js/view-transitions.js` and `shared/css/main.css`) by scoping `view-transition-name` strictly to KaTeX `.enclosing[id]` tokens and adding a smooth `.math-fade-in` (`0.35s ease-out`) container fade-in.
 
 ## Remaining / Future Enhancements
 - `[ ]` Expand word problem / real-world application modes across modules.

@@ -3,7 +3,9 @@ import { SharedAnimationPlayer } from '../../shared/js/animation-player.js';
 let fractionsPlayer = null;
 let currentProblemGetter = null;
 let currentStepIndexGetter = null;
-let activeInputEl = null;
+let stepInputEl = null;
+let finalInputEl = null;
+let lastSourceInputEl = null;
 
 function ensurePlayer() {
     if (!fractionsPlayer) {
@@ -20,11 +22,16 @@ function ensurePlayer() {
             counterId: 'frac-anim-frame-counter',
             transitionPrefix: 'mult_frac_anim_',
             onFillRequest: () => {
-                if (!currentProblemGetter || !currentStepIndexGetter || !activeInputEl) return;
+                if (!currentProblemGetter || !currentStepIndexGetter) return;
                 const prob = currentProblemGetter();
                 const idx = currentStepIndexGetter();
-                if (prob && prob.steps && prob.steps[idx]) {
-                    fractionsPlayer.fillInput(activeInputEl, prob.steps[idx].expectedInput);
+                if (!prob || !prob.steps || !prob.steps[idx]) return;
+                const isFinal = idx === prob.steps.length - 1;
+                const useFinal = isFinal || (lastSourceInputEl && finalInputEl && lastSourceInputEl === finalInputEl);
+                if (useFinal && finalInputEl) {
+                    fractionsPlayer.fillInput(finalInputEl, prob.steps[prob.steps.length - 1].expectedInput);
+                } else if (stepInputEl) {
+                    fractionsPlayer.fillInput(stepInputEl, prob.steps[idx].expectedInput);
                 }
             }
         });
@@ -33,18 +40,25 @@ function ensurePlayer() {
     return fractionsPlayer;
 }
 
-export function attachFractionsHintListener(inputElement, getProblemFunc, getStepIndexFunc) {
+export function attachFractionsHintListener(stepInput, finalInput, getProblemFunc, getStepIndexFunc) {
     currentProblemGetter = getProblemFunc;
     currentStepIndexGetter = getStepIndexFunc;
-    activeInputEl = inputElement;
+    stepInputEl = stepInput;
+    finalInputEl = finalInput;
     ensurePlayer();
 
-    inputElement.addEventListener('keydown', (e) => {
-        if (e.key === 'Tab') {
-            e.preventDefault();
-            playNextFractionsHint(getProblemFunc(), getStepIndexFunc(), inputElement);
-        }
-    });
+    const bindTab = (el) => {
+        if (!el) return;
+        el.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                playNextFractionsHint(getProblemFunc(), getStepIndexFunc(), stepInput, finalInput, el);
+            }
+        });
+    };
+
+    bindTab(stepInput);
+    bindTab(finalInput);
 }
 
 export function hideFractionsAnimation() {
@@ -53,9 +67,11 @@ export function hideFractionsAnimation() {
     }
 }
 
-export function playNextFractionsHint(problem, stepIndex, inputElement) {
+export function playNextFractionsHint(problem, stepIndex, stepInput, finalInput, sourceInput) {
     if (!problem || stepIndex >= problem.steps.length) return;
-    activeInputEl = inputElement;
+    stepInputEl = stepInput;
+    finalInputEl = finalInput;
+    lastSourceInputEl = sourceInput || stepInput;
 
     const step = problem.steps[stepIndex];
     const hintBox = document.getElementById('fractions-hint-content');
@@ -80,12 +96,20 @@ export function playNextFractionsHint(problem, stepIndex, inputElement) {
         hintBox.replaceChildren(card);
     }
 
+    const isFinalStep = stepIndex === problem.steps.length - 1;
+    const useFinal = isFinalStep || (sourceInput && finalInput && sourceInput === finalInput);
     const player = ensurePlayer();
     player.handleTabKey({
         stepKey: `frac-${stepIndex}`,
         frames: step.animationFrames || [],
         captions: step.frameCaptions || [],
-        expectedAnswer: step.expectedInput,
-        inputEl: inputElement
+        autoplay: false,
+        fillInputFn: () => {
+            if (useFinal && finalInput) {
+                player.fillInput(finalInput, problem.steps[problem.steps.length - 1].expectedInput);
+            } else if (stepInput) {
+                player.fillInput(stepInput, step.expectedInput);
+            }
+        }
     });
 }

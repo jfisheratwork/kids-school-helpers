@@ -1,5 +1,5 @@
 import { generateLongDivisionProblem } from './generator-long-division.js';
-import { playNextHint, resetHintPlayer } from './hints-player-long-division.js';
+import { attachLongDivisionHintListener, resetHintPlayer } from './hints-player-long-division.js';
 import { ViewTransitions } from '../../shared/js/view-transitions.js';
 
 let currentProblem = null;
@@ -11,20 +11,20 @@ export function initLongDivisionSolver() {
         btnGenerate.addEventListener('click', handleGenerate);
     }
 
-    document.addEventListener('keydown', (e) => {
-        const container = document.getElementById('mode-long-division-container');
-        if (!container || container.classList.contains('hidden')) return;
-
-        if (e.key === 'Tab') {
-            e.preventDefault();
-            playNextHint(currentProblem, currentStepIndex);
-        }
-    });
-
     const stepInput = document.getElementById('long-division-step-input');
+    const finalInput = document.getElementById('long-division-final-input');
+
     if (stepInput) {
-        stepInput.addEventListener('keydown', handleInput);
+        stepInput.addEventListener('keydown', (e) => handleInput(e, false));
     }
+    if (finalInput) {
+        finalInput.addEventListener('keydown', (e) => handleInput(e, true));
+    }
+    if (stepInput || finalInput) {
+        attachLongDivisionHintListener(stepInput, finalInput, () => currentProblem, () => currentStepIndex);
+    }
+
+    handleGenerate();
 }
 
 function handleGenerate() {
@@ -130,23 +130,106 @@ function renderGrid() {
     container.appendChild(table);
 }
 
+function getLongDivisionStepLabel(step) {
+    if (step.type === 'divide_digit') {
+        return `Divide ${step.workingNum} ÷ ${step.divisor}`;
+    } else if (step.type === 'multiply_back') {
+        return `Multiply ${step.qDigit} × ${step.divisor}`;
+    } else if (step.type === 'subtract_down') {
+        return `Subtract ${step.workingNum} - ${step.multBack}`;
+    } else if (step.type === 'bring_down') {
+        return `Bring down next digit (${step.nextDigit})`;
+    }
+    return 'Complete division step';
+}
+
+function renderStepsList() {
+    const listEl = document.getElementById('long-division-steps-list');
+    const summaryEl = document.getElementById('long-division-steps-summary');
+    if (!listEl || !currentProblem) return;
+
+    listEl.replaceChildren();
+    const activeSteps = currentProblem.steps
+        .map((step, originalIdx) => ({ step, originalIdx }))
+        .filter((entry) => !entry.step.isSkip);
+    const total = activeSteps.length;
+    const completedCount = activeSteps.filter((entry) => entry.originalIdx < currentStepIndex).length;
+
+    if (summaryEl) {
+        summaryEl.textContent =
+            currentStepIndex >= currentProblem.steps.length
+                ? `All ${total} steps completed`
+                : `Step ${Math.min(completedCount + 1, total)} of ${total}`;
+    }
+
+    activeSteps.forEach((entry, displayIdx) => {
+        const { step, originalIdx } = entry;
+        const isDone = originalIdx < currentStepIndex;
+        const isActive = originalIdx === currentStepIndex;
+        const li = document.createElement('li');
+        li.className = `flex items-center justify-between px-3 py-1.5 rounded-lg border transition-all ${
+            isDone
+                ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900'
+                : isActive
+                  ? 'bg-indigo-50 border-indigo-300 text-indigo-900 font-semibold shadow-sm'
+                  : 'bg-gray-50/70 border-gray-200 text-gray-500'
+        }`;
+
+        const left = document.createElement('div');
+        left.className = 'flex items-center gap-2';
+        const badge = document.createElement('span');
+        badge.className = `inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${
+            isDone
+                ? 'bg-emerald-600 text-white'
+                : isActive
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-200 text-gray-600'
+        }`;
+        badge.textContent = isDone ? '✓' : String(displayIdx + 1);
+        const label = document.createElement('span');
+        label.textContent = getLongDivisionStepLabel(step);
+        left.append(badge, label);
+
+        const right = document.createElement('span');
+        right.className = 'font-mono text-xs';
+        right.textContent = isDone ? step.expectedInput : isActive ? 'Current Step' : 'Pending';
+
+        li.append(left, right);
+        listEl.appendChild(li);
+    });
+}
+
 function setupCurrentStep() {
-    const input = document.getElementById('long-division-step-input');
+    const stepInput = document.getElementById('long-division-step-input');
+    const finalInput = document.getElementById('long-division-final-input');
     const error = document.getElementById('long-division-step-error');
-    input.value = '';
-    error.classList.add('hidden');
+    if (stepInput) stepInput.value = '';
+    if (error) error.classList.add('hidden');
 
     processAutoSteps();
+    renderStepsList();
 
     if (currentStepIndex >= currentProblem.steps.length) {
-        input.disabled = true;
-        input.value = 'Done!';
+        if (stepInput) {
+            stepInput.disabled = true;
+            stepInput.value = 'Done!';
+        }
+        if (finalInput) {
+            finalInput.disabled = true;
+            finalInput.value = String(currentProblem.quotientStr);
+        }
         updateHint();
         return;
     }
 
-    input.disabled = false;
-    input.focus();
+    if (stepInput) {
+        stepInput.disabled = false;
+        stepInput.focus();
+    }
+    if (finalInput) {
+        finalInput.disabled = false;
+        finalInput.value = '';
+    }
     updateHint();
 }
 
@@ -166,13 +249,32 @@ function getCycleForStep(index) {
     return cycle;
 }
 
-function handleInput(e) {
+function handleInput(e, isFinalBox) {
     if (e.key === 'Enter') {
         const val = e.target.value.trim();
         const step = currentProblem.steps[currentStepIndex];
         if (!step) return;
 
-        if (val === step.expectedInput) {
+        const isFinalMatch = val === String(currentProblem.quotientStr);
+        const isStepMatch = val === step.expectedInput;
+
+        if (isFinalBox && isFinalMatch) {
+            document.getElementById('long-division-step-error').classList.add('hidden');
+            resetHintPlayer();
+
+            ViewTransitions.update(document.getElementById('long-division-math-grid'), 'div_', () => {
+                for (; currentStepIndex < currentProblem.steps.length; currentStepIndex++) {
+                    const s = currentProblem.steps[currentStepIndex];
+                    if (!s.isSkip) {
+                        renderStepResult(s);
+                    }
+                }
+                setupCurrentStep();
+            });
+            return;
+        }
+
+        if (!isFinalBox && isStepMatch) {
             document.getElementById('long-division-step-error').classList.add('hidden');
             e.target.value = '';
             resetHintPlayer();
@@ -185,7 +287,9 @@ function handleInput(e) {
             });
         } else {
             const errorDiv = document.getElementById('long-division-step-error');
-            errorDiv.textContent = 'Not quite right. Press Tab for a hint!';
+            errorDiv.textContent = isFinalBox
+                ? 'Not quite the final quotient yet. Try solving the current step or press Tab for a hint!'
+                : 'Not quite right. Press Tab for a hint!';
             errorDiv.classList.remove('hidden');
             e.target.select();
         }

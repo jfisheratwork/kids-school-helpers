@@ -100,18 +100,34 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Solver Workspace -->
                 <div class="md:col-span-2 space-y-6 flex flex-col">
-                    <div class="bg-white rounded-xl shadow-md border-t-4 border-primary p-6 relative flex-grow min-h-[400px] flex items-center justify-center overflow-x-auto">
-                        <div class="mb-6 flex justify-center items-start gap-8 min-h-[12rem]">
+                    <div class="bg-white rounded-xl shadow-md border-t-4 border-primary p-6 relative flex-grow min-h-[400px] flex flex-col items-center justify-center overflow-x-auto gap-4">
+                        <div class="mb-2 flex justify-center items-start gap-8 min-h-[12rem]">
                             <!-- Math Grid -->
                             <div id="long-division-math-grid" class="font-mono text-3xl text-right leading-loose tracking-widest relative">
                                 <!-- Populated by JS -->
                             </div>
                         </div>
+                        <div id="long-division-steps-container" class="w-full max-w-xl border-t border-gray-100 pt-3">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Step-by-Step Progression</span>
+                                <span id="long-division-steps-summary" class="text-[11px] font-semibold text-indigo-600"></span>
+                            </div>
+                            <ul id="long-division-steps-list" class="space-y-1.5 text-xs"></ul>
+                        </div>
                     </div>
-                    
+
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <label class="block text-sm font-semibold text-gray-600 uppercase tracking-wider mb-2 text-center">Enter your step here (Press Tab for visual hint, Tab again to fill)</label>
-                        <input type="text" id="long-division-step-input" placeholder="..." class="w-full text-center text-xl p-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-mono" autocomplete="off">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="long-division-step-input" class="block text-xs font-bold text-indigo-700 uppercase tracking-wider mb-1.5 text-center">1. Partial / Step Result (Tab for Hint / Fill)</label>
+                                <input type="text" id="long-division-step-input" placeholder="Next step digit or value..." class="w-full text-center text-lg p-3 border-2 border-indigo-200 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-mono" autocomplete="off">
+                            </div>
+                            <div>
+                                <label for="long-division-final-input" class="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1.5 text-center">2. Final Answer / Quotient (Tab for Hint / Fill)</label>
+                                <input type="text" id="long-division-final-input" placeholder="Final quotient..." class="w-full text-center text-lg p-3 border-2 border-emerald-200 rounded-lg focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 transition-all font-mono" autocomplete="off">
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-gray-500 text-center mt-2">Press <kbd class="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded font-mono text-[10px]">Tab</kbd> inside either box to advance visual hint frames; press <kbd class="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded font-mono text-[10px]">Tab</kbd> on the final frame to intelligently fill that box.</p>
                         <div id="long-division-step-error" class="text-red-500 text-sm mt-2 text-center hidden font-medium"></div>
                     </div>
                 </div>
@@ -175,16 +191,32 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Solver Workspace -->
                 <div class="md:col-span-2 space-y-6 flex flex-col">
-                    <div class="bg-white rounded-xl shadow-md border-t-4 border-primary p-6 relative flex-grow min-h-[300px] flex items-center justify-center overflow-x-auto">
+                    <div class="bg-white rounded-xl shadow-md border-t-4 border-primary p-6 relative flex-grow min-h-[300px] flex flex-col items-center justify-center overflow-x-auto gap-4">
                         <!-- KaTeX display -->
                         <div id="fractions-math-display" class="text-4xl">
                             <!-- Populated by KaTeX -->
                         </div>
+                        <div id="fractions-steps-container" class="w-full max-w-xl border-t border-gray-100 pt-3">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Step-by-Step Progression</span>
+                                <span id="fractions-steps-summary" class="text-[11px] font-semibold text-indigo-600"></span>
+                            </div>
+                            <ul id="fractions-steps-list" class="space-y-1.5 text-xs"></ul>
+                        </div>
                     </div>
-                    
+
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        <label class="block text-sm font-semibold text-gray-600 uppercase tracking-wider mb-2 text-center">Enter your step here (Press Tab for visual hint, Tab again to fill)</label>
-                        <input type="text" id="fractions-step-input" placeholder="..." class="w-full text-center text-xl p-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-mono" autocomplete="off">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="fractions-step-input" class="block text-xs font-bold text-indigo-700 uppercase tracking-wider mb-1.5 text-center">1. Partial / Step Result (Tab for Hint / Fill)</label>
+                                <input type="text" id="fractions-step-input" placeholder="Next step fraction..." class="w-full text-center text-lg p-3 border-2 border-indigo-200 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-mono" autocomplete="off">
+                            </div>
+                            <div>
+                                <label for="fractions-final-input" class="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1.5 text-center">2. Final Answer (Tab for Hint / Fill)</label>
+                                <input type="text" id="fractions-final-input" placeholder="Simplified final fraction..." class="w-full text-center text-lg p-3 border-2 border-emerald-200 rounded-lg focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 transition-all font-mono" autocomplete="off">
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-gray-500 text-center mt-2">Press <kbd class="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded font-mono text-[10px]">Tab</kbd> inside either box to advance visual hint frames; press <kbd class="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded font-mono text-[10px]">Tab</kbd> on the final frame to intelligently fill that box.</p>
                         <div id="fractions-step-error" class="text-red-500 text-sm mt-2 text-center hidden font-medium"></div>
                     </div>
                 </div>

@@ -4,6 +4,7 @@ let fractionsDivPlayer = null;
 let currentProblemGetter = null;
 let currentStepIndexGetter = null;
 let activeInputEl = null;
+let finalInputRef = null;
 
 function ensurePlayer() {
     if (!fractionsDivPlayer) {
@@ -24,7 +25,10 @@ function ensurePlayer() {
                 const prob = currentProblemGetter();
                 const idx = currentStepIndexGetter();
                 if (prob && prob.steps && prob.steps[idx]) {
-                    fractionsDivPlayer.fillInput(activeInputEl, prob.steps[idx].expectedInput);
+                    const isFinalTarget = activeInputEl === finalInputRef || activeInputEl.id === 'fractions-final-input';
+                    const finalStep = prob.steps[prob.steps.length - 1];
+                    const expectedVal = isFinalTarget ? finalStep.expectedInput : prob.steps[idx].expectedInput;
+                    fractionsDivPlayer.fillInput(activeInputEl, expectedVal);
                 }
             }
         });
@@ -33,18 +37,25 @@ function ensurePlayer() {
     return fractionsDivPlayer;
 }
 
-export function attachFractionsHintListener(inputElement, getProblemFunc, getStepIndexFunc) {
+export function attachFractionsHintListener(stepInputEl, finalInputEl, getProblemFunc, getStepIndexFunc) {
     currentProblemGetter = getProblemFunc;
     currentStepIndexGetter = getStepIndexFunc;
-    activeInputEl = inputElement;
+    activeInputEl = stepInputEl;
+    finalInputRef = finalInputEl;
     ensurePlayer();
 
-    inputElement.addEventListener('keydown', (e) => {
-        if (e.key === 'Tab') {
-            e.preventDefault();
-            playNextFractionsHint(getProblemFunc(), getStepIndexFunc(), inputElement);
-        }
-    });
+    const bindTab = (inputEl) => {
+        if (!inputEl) return;
+        inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                playNextFractionsHint(getProblemFunc(), getStepIndexFunc(), inputEl);
+            }
+        });
+    };
+
+    bindTab(stepInputEl);
+    bindTab(finalInputEl);
 }
 
 export function hideFractionsDivisionAnimation() {
@@ -55,7 +66,8 @@ export function hideFractionsDivisionAnimation() {
 
 export function playNextFractionsHint(problem, stepIndex, inputElement) {
     if (!problem || stepIndex >= problem.steps.length) return;
-    activeInputEl = inputElement;
+    if (inputElement) activeInputEl = inputElement;
+    const targetInput = activeInputEl || document.getElementById('fractions-step-input');
 
     const step = problem.steps[stepIndex];
     const hintBox = document.getElementById('fractions-hint-content');
@@ -86,12 +98,16 @@ export function playNextFractionsHint(problem, stepIndex, inputElement) {
         hintBox.replaceChildren(card);
     }
 
+    const isFinalTarget = targetInput && (targetInput === finalInputRef || targetInput.id === 'fractions-final-input');
+    const finalStep = problem.steps[problem.steps.length - 1];
+    const expectedAnswer = isFinalTarget ? finalStep.expectedInput : step.expectedInput;
+
     const player = ensurePlayer();
     player.handleTabKey({
         stepKey: `div-frac-${stepIndex}`,
         frames: step.animationFrames || [],
         captions: step.frameCaptions || [],
-        expectedAnswer: step.expectedInput,
-        inputEl: inputElement
+        expectedAnswer,
+        inputEl: targetInput
     });
 }
