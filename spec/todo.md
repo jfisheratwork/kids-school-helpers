@@ -24,6 +24,10 @@ This file tracks the overarching progress of the `kids-school-helpers` repositor
   - Added **Number Size** dropdown (`Single Digit (1–9)`, `Double Digits (10–99)`, `Triple Digits (100–999)`) to Fractions Practice (`fractions/index.html`) across both Interactive Solver and Worksheet Generator modes.
   - Scaled fraction generators (`generator-addsub.js`, `generator-mult.js`, `generator-div.js`, `generator-concepts.js`) to generate multi-digit numerators and denominators while preserving valid mathematical reductions and zero-denominator safety.
 
+- `[x]` **Phase 8: Fractions-to-Decimals (Long Division) & Decimals-to-Fractions Courses (`spec/04-fractions-and-decimals-conversion.md`)**
+  - Added `/fractions-to-decimals/` with an interactive decimal long-division bracket, upfront How-To guide drawer (`guide.js`), 4 complexity levels (`basic`, `medium`, `challenging`, `repeating`), 3-frame `\htmlId` animations, dual inputs, and printable worksheets with full long-division Answer Keys.
+  - Added `/decimals-to-fractions/` with step-by-step Place Value & GCF reduction, upfront How-To guide drawer (`guide.js`), 3 complexity levels (`basic`, `medium`, `challenging`), 3-frame `\htmlId` animations, dual inputs, and printable worksheets with step-by-step Answer Keys.
+
 ## Remaining / Future Enhancements
 - `[ ]` Expand word problem / real-world application modes across modules.
 - `[ ]` Add optional audio/speech synthesis read-aloud support for step captions.

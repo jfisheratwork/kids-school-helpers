@@ -1,5 +1,15 @@
 import { Fraction } from '../shared/js/fraction.js';
 import { EquationGenerator } from '../pre-algebra-solver/js/generator.js';
+import {
+  buildFractionToDecimalProblem,
+  generateFractionToDecimalProblem,
+  parseCustomFractionToDecimalProblem
+} from '../fractions-to-decimals/js/generator.js';
+import {
+  buildDecimalToFractionProblem,
+  generateDecimalToFractionProblem,
+  parseCustomDecimalToFractionProblem
+} from '../decimals-to-fractions/js/generator.js';
 
 // Simple browser assertion library
 const assert = {
@@ -285,6 +295,119 @@ testSuite.describe("Equation Generator and Validator Suite", () => {
       assert.equal(step.frameCaptions.length, 3, `Step ${idx} should have 3 frameCaptions`);
       step.animationFrames.forEach((frame, fIdx) => {
         assert.ok(frame.includes('\\htmlId{'), `Step ${idx} frame ${fIdx} missing leaf \\htmlId token`);
+      });
+    });
+  });
+});
+
+testSuite.describe("Fractions to Decimals (Long Division) Suite", () => {
+  testSuite.it("should build exact long-division steps for proper terminating fraction 3/4", () => {
+    const p = buildFractionToDecimalProblem(3, 4, 'medium');
+    assert.equal(p.quotientStr, "0.75");
+    assert.equal(p.finalRemainder, 0);
+    assert.equal(p.maxDecimalPlaces, 2);
+    // 1 divide_whole + 2 decimal cycles * 4 steps = 9 steps
+    assert.equal(p.steps.length, 9);
+    assert.equal(p.steps[0].type, "divide_whole");
+    assert.equal(p.steps[0].expectedInput, "0");
+    assert.equal(p.steps[1].type, "bring_down_zero");
+    assert.equal(p.steps[1].expectedInput, "30");
+    assert.equal(p.steps[2].type, "divide_digit");
+    assert.equal(p.steps[2].expectedInput, "7");
+    assert.equal(p.steps[3].type, "multiply_back");
+    assert.equal(p.steps[3].expectedInput, "28");
+    assert.equal(p.steps[4].type, "subtract_down");
+    assert.equal(p.steps[4].expectedInput, "2");
+  });
+
+  testSuite.it("should build exact long-division steps for improper fraction 7/4", () => {
+    const p = buildFractionToDecimalProblem(7, 4, 'challenging');
+    assert.equal(p.quotientStr, "1.75");
+    assert.equal(p.finalRemainder, 0);
+    assert.equal(p.steps[0].type, "divide_whole");
+    assert.equal(p.steps[0].expectedInput, "1");
+    assert.equal(p.steps[1].type, "multiply_back");
+    assert.equal(p.steps[1].expectedInput, "4");
+    assert.equal(p.steps[2].type, "subtract_down");
+    assert.equal(p.steps[2].expectedInput, "3");
+  });
+
+  testSuite.it("should generate 3-frame htmlId animations across all 5 complexity levels including mixed_signed", () => {
+    ['basic', 'medium', 'challenging', 'repeating', 'mixed_signed'].forEach((level) => {
+      const p = generateFractionToDecimalProblem(level);
+      assert.ok(p.steps.length >= 5, `Level ${level} should have at least 5 steps`);
+      p.steps.forEach((step, idx) => {
+        assert.equal(step.animationFrames.length, 3, `F2D ${level} step ${idx} needs 3 frames`);
+        assert.equal(step.frameCaptions.length, 3, `F2D ${level} step ${idx} needs 3 captions`);
+        step.animationFrames.forEach((f, fIdx) => {
+          const mathStr = typeof f === 'string' ? f : f.math;
+          assert.ok(mathStr.includes('\\htmlId{'), `F2D ${level} step ${idx} frame ${fIdx} missing \\htmlId`);
+        });
+      });
+    });
+  });
+
+  testSuite.it("should parse and build exact long-division + combine steps for signed mixed number -5 7/12", () => {
+    const p = parseCustomFractionToDecimalProblem("-5 7/12");
+    assert.ok(p, "Should parse -5 7/12");
+    assert.equal(p.isNegative, true);
+    assert.equal(p.wholePart, 5);
+    assert.equal(p.numerator, 7);
+    assert.equal(p.denominator, 12);
+    assert.equal(p.maxDecimalPlaces, 3);
+    assert.equal(p.quotientStr, "0.583");
+    assert.equal(p.finalAnswerStr, "-5.583");
+    assert.ok(p.acceptedFinalAnswers.includes("-5.583"));
+    assert.ok(p.acceptedFinalAnswers.includes("-5.583..."));
+    assert.ok(p.acceptedFinalAnswers.includes("-5.58"));
+    const finalStep = p.steps[p.steps.length - 1];
+    assert.equal(finalStep.type, "combine_whole_and_sign");
+    assert.equal(finalStep.expectedInput, "-5.583");
+  });
+});
+
+testSuite.describe("Decimals to Fractions Suite", () => {
+  testSuite.it("should build place-value and GCF reduction steps for 0.75", () => {
+    const p = buildDecimalToFractionProblem("0.75", "basic");
+    assert.equal(p.placeValueDenom, 100);
+    assert.equal(p.gcf, 25);
+    assert.equal(p.finalExpected, "3/4");
+    assert.equal(p.steps.length, 4);
+    assert.equal(p.steps[0].expectedInput, "100");
+    assert.equal(p.steps[1].expectedInput, "75/100");
+    assert.equal(p.steps[2].expectedInput, "25");
+    assert.equal(p.steps[3].expectedInput, "3/4");
+  });
+
+  testSuite.it("should support mixed and improper answers for decimals greater than 1 (e.g. 1.25)", () => {
+    const p = buildDecimalToFractionProblem("1.25", "challenging");
+    assert.equal(p.placeValueDenom, 100);
+    assert.equal(p.gcf, 25);
+    assert.ok(p.acceptedFinalAnswers.includes("1 1/4"));
+    assert.ok(p.acceptedFinalAnswers.includes("5/4"));
+  });
+
+  testSuite.it("should support negative mixed decimals (e.g. -5.75 -> -5 3/4 or -23/4)", () => {
+    const p = parseCustomDecimalToFractionProblem("-5.75");
+    assert.ok(p, "Should parse -5.75");
+    assert.equal(p.isNegative, true);
+    assert.equal(p.wholePart, 5);
+    assert.equal(p.finalExpected, "-5 3/4");
+    assert.ok(p.acceptedFinalAnswers.includes("-5 3/4"));
+    assert.ok(p.acceptedFinalAnswers.includes("-23/4"));
+  });
+
+  testSuite.it("should generate 3-frame htmlId animations across all 3 complexity levels", () => {
+    ['basic', 'medium', 'challenging'].forEach((level) => {
+      const p = generateDecimalToFractionProblem(level);
+      assert.ok(p.steps.length >= 2, `Level ${level} should have at least 2 steps`);
+      p.steps.forEach((step, idx) => {
+        assert.equal(step.animationFrames.length, 3, `D2F ${level} step ${idx} needs 3 frames`);
+        assert.equal(step.frameCaptions.length, 3, `D2F ${level} step ${idx} needs 3 captions`);
+        step.animationFrames.forEach((f, fIdx) => {
+          const mathStr = typeof f === 'string' ? f : f.math;
+          assert.ok(mathStr.includes('\\htmlId{'), `D2F ${level} step ${idx} frame ${fIdx} missing \\htmlId`);
+        });
       });
     });
   });

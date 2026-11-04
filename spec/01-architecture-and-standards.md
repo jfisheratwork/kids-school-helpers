@@ -9,7 +9,7 @@
 
 ## Repository and Directory Structure
 * **Root Integration:** The repository root must contain a primary `index.html` acting as a centralized navigational hub linking to all hosted applications.
-* **Application Isolation:** Each solver module resides in a dedicated subdirectory (`/pre-algebra-solver/`, `/fractions/`, `/multiplication/`, `/division/`, `/geometry/`, `/graphing-lines/`).
+* **Application Isolation:** Each solver module resides in a dedicated subdirectory (`/pre-algebra-solver/`, `/fractions/`, `/fractions-to-decimals/`, `/decimals-to-fractions/`, `/multiplication/`, `/division/`, `/geometry/`, `/graphing-lines/`).
 * **Shared Utilities (`/shared/`):** Shared math primitives (`fraction.js`), KaTeX rendering (`renderer.js`), View Transitions (`view-transitions.js`), and the unified step animation engine (`animation-player.js`) reside in `/shared/js/` and `/shared/css/main.css`.
 
 ## User Interface & Pedagogical Animation Standards
