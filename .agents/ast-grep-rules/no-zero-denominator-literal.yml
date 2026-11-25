@@ -1,0 +1,6 @@
+id: no-zero-denominator-literal
+message: 'Zero denominator literal passed to new Fraction(). Denominators must be non-zero to avoid divide-by-zero errors.'
+severity: error
+language: javascript
+rule:
+    pattern: new Fraction($N, 0)

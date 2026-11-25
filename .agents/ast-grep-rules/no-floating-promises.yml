@@ -1,0 +1,6 @@
+id: no-floating-promises
+message: 'Uncaught or unawaited promise executor function. Ensure promises are handled or awaited.'
+severity: warning
+language: javascript
+rule:
+    pattern: 'new Promise(($RESOLVE, $REJECT) => { $$$BODY })'

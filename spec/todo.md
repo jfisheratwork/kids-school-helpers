@@ -28,6 +28,12 @@ This file tracks the overarching progress of the `kids-school-helpers` repositor
   - Added `/fractions-to-decimals/` with an interactive decimal long-division bracket, upfront How-To guide drawer (`guide.js`), 4 complexity levels (`basic`, `medium`, `challenging`, `repeating`), 3-frame `\htmlId` animations, dual inputs, and printable worksheets with full long-division Answer Keys.
   - Added `/decimals-to-fractions/` with step-by-step Place Value & GCF reduction, upfront How-To guide drawer (`guide.js`), 3 complexity levels (`basic`, `medium`, `challenging`), 3-frame `\htmlId` animations, dual inputs, and printable worksheets with step-by-step Answer Keys.
 
+- `[x]` **Phase 9: Agent Governance, `.agents/` Ecosystem, Makefile & Deterministic Validation (`spec/05`–`spec/08`)**
+  - Upgraded `AGENTS.md` with Harness Retrospective, Code Hygiene & YAGNI, Project-Relative Markdown Links, Fail-Fast / Zero Silent Fallbacks, Large Payload Offloading, Vertical Slices, and Mandatory Multi-Option UI Mockups (`spec/05-agents-governance-upgrades.md`).
+  - Materialized `.agents/agents/` (`math-auditor.md`, `ui-auditor.md`), `.agents/rules/` (`coding.md`, `javascript-conventions.md`, `git-pre-commit.md`, `node-js.md`), `.agents/skills/` (`math-engine-audit`, `git-commit-push`), and 7 new `.agents/ast-grep-rules/` rules (`spec/06-agents-ecosystem-and-ast-rules.md`).
+  - Consolidated `Makefile` targets (`serve`/`stop`/`status`, `test-unit`/`test-e2e`/`test`, `lint`, `check-repo`, `check`/`repchecks`, `pre-push`, `install-hooks`) (`spec/07-makefile-targets.md`).
+  - Added `scripts/check-repo.js` (`--links`, `--skills`, `--cdn`), `scripts/lint-rules.js`, `.githooks/pre-push`, `.prettierrc`/`.prettierignore`, and upgraded `scripts/post-tool-quality.js` and `.githooks/pre-commit` (`spec/08-deterministic-validation-scripts.md`).
+
 ## Remaining / Future Enhancements
 - `[ ]` Expand word problem / real-world application modes across modules.
 - `[ ]` Add optional audio/speech synthesis read-aloud support for step captions.

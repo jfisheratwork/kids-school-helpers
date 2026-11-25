@@ -1,0 +1,14 @@
+id: no-raw-katex-outside-renderer
+message: 'Avoid calling katex.render() or katex.renderToString() directly outside shared/js/renderer.js; use the centralized MathRenderer helpers.'
+severity: warning
+language: javascript
+ignores:
+    - 'shared/js/renderer.js'
+    - '**/lib/**'
+    - 'test/**'
+rule:
+    any:
+        - pattern: katex.render($$$ARGS)
+        - pattern: katex.renderToString($$$ARGS)
+        - pattern: window.katex.render($$$ARGS)
+        - pattern: window.katex.renderToString($$$ARGS)

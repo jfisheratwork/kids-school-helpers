@@ -15,12 +15,13 @@ fi
 # Filter files, excluding third-party vendor code like pre-algebra-solver/lib/
 STAGED_JS=$(echo "$STAGED_FILES" | grep -E '\.js$' | grep -v -E '(^|/)lib/' || true)
 STAGED_ALL_CODE=$(echo "$STAGED_FILES" | grep -E '\.(js|html|css|json|md)$' || true)
+STAGED_REPO_CHECK=$(echo "$STAGED_FILES" | grep -E '(\.md$|\.html$|^(\.agents|spec)/)' || true)
 
 echo "🔍 Running pre-commit validation gates on staged files..."
 
 # 1. Merge Conflict Marker Check
 if [ -n "$STAGED_ALL_CODE" ]; then
-    echo "  ▶ [1/5] Checking for merge conflict markers..."
+    echo "  ▶ [1/6] Checking for merge conflict markers..."
     CONFLICTS=$(git diff --cached --check || true)
     if [ -n "$CONFLICTS" ]; then
         echo "❌ Merge conflict markers or whitespace errors detected:"
@@ -31,7 +32,7 @@ fi
 
 # 2. JavaScript Syntax Verification (node -c)
 if [ -n "$STAGED_JS" ]; then
-    echo "  ▶ [2/5] JavaScript syntax check (node -c)..."
+    echo "  ▶ [2/6] JavaScript syntax check (node -c)..."
     for file in $STAGED_JS; do
         if [ -f "$file" ]; then
             node -c "$file" || {
@@ -45,7 +46,7 @@ fi
 
 # 3. ast-grep Structural Rules Check
 if [ -n "$STAGED_JS" ]; then
-    echo "  ▶ [3/5] ast-grep structural coding rules..."
+    echo "  ▶ [3/6] ast-grep structural coding rules..."
     if command -v ast-grep >/dev/null 2>&1; then
         ast-grep scan --min-severity error $STAGED_JS || {
             echo "❌ ast-grep rule violations detected. Fix errors before committing."
@@ -60,27 +61,38 @@ fi
 # 4. ESLint Check (if available)
 if [ -n "$STAGED_JS" ]; then
     if command -v eslint >/dev/null 2>&1 || [ -f "node_modules/.bin/eslint" ]; then
-        echo "  ▶ [4/5] ESLint code quality scan..."
+        echo "  ▶ [4/6] ESLint code quality scan..."
         npx eslint $STAGED_JS || {
             echo "❌ ESLint check failed. Fix lint issues or run 'npx eslint --fix'."
             exit 1
         }
         echo "    ✔ ESLint check passed."
     else
-        echo "  ▶ [4/5] ESLint not installed in environment; syntax + ast-grep gates active."
+        echo "  ▶ [4/6] ESLint not installed in environment; syntax + ast-grep gates active."
     fi
 else
-    echo "  ▶ [4/5] No staged JavaScript files to lint."
+    echo "  ▶ [4/6] No staged JavaScript files to lint."
 fi
 
 # 5. Staged Artifacts & Secrets Hygiene
-echo "  ▶ [5/5] Hygiene & sensitive files check..."
+echo "  ▶ [5/6] Hygiene & sensitive files check..."
 SUSPICIOUS_FILES=$(echo "$STAGED_FILES" | grep -E '(\.env|debug-.*\.png$|\.server\.pid$|test-results\.json$)' || true)
 if [ -n "$SUSPICIOUS_FILES" ]; then
     echo "⚠️ Warning: The following temporary/debug files are staged for commit:"
     echo "$SUSPICIOUS_FILES"
     echo "Please unstage or add them to .gitignore before committing."
     exit 1
+fi
+
+# 6. Repo Docs, Safety & CDN Verification (Markdown, HTML, .agents/, spec/)
+if [ -n "$STAGED_REPO_CHECK" ]; then
+    echo "  ▶ [6/6] Running repo links, safety & CDN verification..."
+    node scripts/check-repo.js || {
+        echo "❌ Repo static validation failed. Fix issues before committing."
+        exit 1
+    }
+else
+    echo "  ▶ [6/6] No staged .md, .html, .agents/, or spec/ files; skipping check-repo."
 fi
 
 echo "✅ All pre-commit gates passed cleanly!"

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -e
+
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+# Pre-Push Hook for Kids School Helpers
+# Runs unit tests and headless Chrome E2E integration tests before allowing git push.
+
+STARTED_SERVER=0
+cleanup() {
+    if [ "$STARTED_SERVER" -eq 1 ]; then
+        make stop >/dev/null 2>&1 || true
+    fi
+}
+trap cleanup EXIT
+
+echo "🚀 Running pre-push test gates (unit + headless E2E)..."
+
+echo "  ▶ [1/2] Running unit test suite..."
+make test-unit
+
+echo "  ▶ [2/2] Running headless browser E2E test suite..."
+if ! lsof -Pi :3000 -sTCP:LISTEN -t >/dev/null 2>&1; then
+    make serve
+    STARTED_SERVER=1
+fi
+make test-e2e
+
+echo "✅ All pre-push test gates passed!"
+exit 0

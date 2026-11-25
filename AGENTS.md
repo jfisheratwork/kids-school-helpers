@@ -15,6 +15,12 @@ This document outlines the global rules and development standards for AI agents 
   > Written with the assistance of Google Gemini
 - **UserWalkthrough.md:** Periodically update `UserWalkthrough.md` in the root workspace (ignored by git) with recent screenshots to verify visual layouts and step-by-step solver progression.
 - **local_only/ Hygiene:** Personal profile backups, scratch notes, and local testing logs reside strictly in `local_only/` or `my_sessions/`. Keep `spec/todo.md` focused on remaining work; remove completed items once reflected in the living architecture.
+- **Code Hygiene & YAGNI:**
+  - Before completing a task, strip unrequested helper functions, speculative abstractions, and dead code from touched files.
+  - Place official documentation links above newly introduced external libraries or browser/Web APIs (e.g., View Transitions API, KaTeX, SpeechSynthesis).
+- **Project-Relative Markdown Links:**
+  - All Markdown links to repository files and documentation in committed `.md` files must be project-relative (e.g., `[01-architecture-and-standards.md](spec/01-architecture-and-standards.md)`), never machine-relative (`file:///`, `/Users/`, `/home/`).
+  - Enforced deterministically via `scripts/check-repo.js --links`.
 
 ## 3. Session Management
 
@@ -28,6 +34,11 @@ This document outlines the global rules and development standards for AI agents 
      - **Outcomes:** The specific results, updates, and milestones achieved.
      - **Fine-grained Details:** Breakdown of tasks completed (`Tasks Done`) and tasks remaining or postponed (`Tasks Not Done`).
      - **Prompt Log:** A list of high-level prompt summaries detailing each interaction/request during the session at the very bottom.
+- **Harness Retrospective:**
+  At session wrap-up or PR preparation, inspect transcripts and git diffs to:
+  1. Propose `Makefile` targets for multi-step commands executed 3+ times.
+  2. Author `ast-grep` rules in `.agents/ast-grep-rules/` for recurring syntax or structural errors.
+  3. Record new architectural invariants in [01-architecture-and-standards.md](spec/01-architecture-and-standards.md).
 
 ## 4. File System Boundaries & Tooling Hooks
 
@@ -92,17 +103,26 @@ To optimize AI context window size and maintain high performance, agents MUST fo
 2. **Targeted Test Execution**: Do NOT run the full test suite (especially headless browser tests or Puppeteer) after every minor tweak. Only run integration tests when a major logic feature is complete, at the very end of a workflow, or when explicitly requested by the user. Rely on targeted manual verification or unit tests (`test/unit-tests.js`) for small changes.
 3. **Encourage Batched Requests**: If the user begins making many small, rapid-fire iterative requests (e.g., minor CSS tweaks one by one), politely encourage the user to batch their requests into a larger body of work using an `implementation_plan.md` or spec file.
 4. **Mandatory Architecture Reference**: Before designing new educational solvers or modifying shared math infrastructure, consult `spec/01-architecture-and-standards.md`, `spec/todo.md`, and module-level specs (e.g., `pre-algebra-solver/specs/`, `graphing-lines/specs/`).
+5. **Offload Large Payloads to Temp Space**: Never print logs, DOM dumps, or JSON payloads exceeding 100 lines directly to stdout. Write large outputs to `<conversation-id>/scratch/` or `/tmp/`, inspect the schema with `head -n 20` or `jq '.[0]'`, and extract answers with deterministic CLI tools (`jq`, `grep`, `awk`, or Node.js scripts).
 
 ## 8. Strict Verification & Systemic Bug Searching
 
-- **Mandatory Validation Loop:** You CANNOT declare a task "done" without explicitly validating both the UI logic and the Developer Console. Use the `visual-verification` skill (`chrome-devtools-mcp`) or open `http://localhost:3000` to verify there are zero console errors and that math expressions/DOM layouts render as intended.
+- **Mandatory Validation Loop:** You CANNOT declare a task "done" without explicitly validating both the UI logic and the Developer Console. Use the `ui-auditor` persona (`chrome-devtools-mcp`) or open `http://localhost:3000` to verify there are zero console errors and that math expressions/DOM layouts render as intended.
 - **Systemic Pattern Matching:** If you discover a bug caused by a specific code pattern (e.g., direct NaN comparisons, unsimplified fractions, improper KaTeX escaping, unhandled zero denominators), you MUST proactively search the ENTIRE codebase for identical patterns using `ast-grep` or `rg`, and fix them globally before reporting back. Never assume a bug is isolated to a single file.
+- **Fail-Fast & Zero Silent Fallbacks:**
+  - Never use empty `catch` blocks or return silent dummy fallback values (`null`, `[]`, `{}`) in math generators, parsers, or solver engines unless explicitly required by the active spec.
+  - Validate external or user inputs (custom problems, fraction strings, URL/DOM inputs) at system boundaries and surface errors cleanly.
 
 ## 9. Spec-Driven Lifecycle & Living Architecture Maintenance
 
 - **Specs First (`./spec` & module specs):** Any time a new body of work, solver mode, or major refactor is initiated, draft or reference the proposal document under `spec/` or module-level specs (e.g., `graphing-lines/specs/01-architecture.md`).
 - **Implementation Plan Mandate:** Every `implementation_plan.md` MUST explicitly begin with a review and direct reference to the active spec, and receive explicit user approval before touching code.
 - **Work Decomposition:** The approved spec must clearly decompose into specific verifiable tasks: mathematical models, state machines, generator logic, and DOM/UI checks.
+- **Vertical Slices:** Implement course and feature specs in sequential verified checkpoints, validating each slice with `node -c` / targeted unit tests before advancing to the next:
+  1. **Math Model & Generator** (pure logic in `shared/js/` or `<module>/js/generator*.js`)
+  2. **Unit Tests** (`test/unit-tests.js`)
+  3. **Solver UI & Animations** (`solver-ui.js`, `hints-player.js`, `guide.js`)
+  4. **Worksheets & Browser Verification** (`worksheet-generator.js`, zero-console-error check via `chrome-devtools-mcp`)
 - **Living Architecture Updates:** As work is completed, tested, and visually verified, reflect changes in:
   1. Targeted unit and headless browser integration tests (`test/`).
   2. Master architecture standards (`spec/01-architecture-and-standards.md`).
@@ -122,12 +142,14 @@ To optimize AI context window size and maintain high performance, agents MUST fo
 
 ## 11. Workspace Skills & Purpose-Built Subagent Personas
 
-- **Progressive Workspace Personas**:
-  - `math-engine-auditor`: Verifies fraction arithmetic, equation generation algorithms, step-by-step solver rules, and division/multiplication steps.
-  - `pedagogical-ui-engineer`: Builds responsive Tailwind layouts, printable worksheet templates, and interactive step input feedback.
-  - `visual-auditor`: Verifies KaTeX math rendering, view transitions, responsive mobile reflow, and zero console errors via `chrome-devtools-mcp`.
-  - `security-sanitizer`: Audits input sanitization, safe DOM text manipulation, and AST security rules.
-  - `spec-architect`: Drafts module specifications and keeps `spec/` roadmaps synchronized.
+- **Materialized Subagent Personas (`.agents/agents/`)**:
+  - [`math-auditor`](.agents/agents/math-auditor.md): Audits fraction arithmetic, zero-denominator safety, equation/problem generators, step-by-step solver state machines, and `test/unit-tests.js` coverage.
+  - [`ui-auditor`](.agents/agents/ui-auditor.md): Audits responsive Tailwind layouts, KaTeX rendering, View Transitions animations, dual-input behavior, printable worksheets, and zero console errors via `chrome-devtools-mcp`.
+- **Native Workspace Skills (`.agents/skills/`)**:
+  - [`math-engine-audit`](.agents/skills/math-engine-audit/SKILL.md): Fraction reduction, zero-denominator guards, long-division / GCF / equation step parity, and unit test verification.
+  - [`git-commit-push`](.agents/skills/git-commit-push/SKILL.md): Staged pre-commit gate, required Gemini attribution footer, and explicit user approval before `git push`.
+- **Modular Workspace Rules (`.agents/rules/`)**:
+  - [`coding.md`](.agents/rules/coding.md), [`javascript-conventions.md`](.agents/rules/javascript-conventions.md), [`git-pre-commit.md`](.agents/rules/git-pre-commit.md), and [`node-js.md`](.agents/rules/node-js.md).
 
 ## 12. Zero-Friction Lazy MCP Signatures & Proactive Coaching Triggers
 
@@ -138,9 +160,9 @@ To eliminate schema-lookup overhead, call these lazy MCP tools directly via `cal
 - **LSP Symbol Lookup (`lsp-bridge` -> `lsp_find_symbol`)**:
   - `Arguments`: `{ "name": "<symbolName>", "include": ["hover", "definition", "references"] }`
 - **LSP Module Surface (`lsp-bridge` -> `lsp_file_exports`)**:
-  - `Arguments`: `{ "file_path": "/Users/jacobfisher/coding/kid-school/shared/js/fraction.js", "include_signatures": true }`
+  - `Arguments`: `{ "file_path": "<repo-root>/shared/js/fraction.js", "include_signatures": true }`
 - **AST Structural Search (`ast-grep` -> `find_code`)**:
-  - `Arguments`: `{ "project_folder": "/Users/jacobfisher/coding/kid-school", "language": "javascript", "pattern": "<AST_Pattern>" }`
+  - `Arguments`: `{ "project_folder": "<repo-root>", "language": "javascript", "pattern": "<AST_Pattern>" }`
 - **Browser Console Audit (`chrome-devtools-mcp` -> `list_pages` & `list_console_messages`)**:
   - `list_pages` `Arguments`: `{}`
   - `list_console_messages` `Arguments`: `{ "pageId": 1, "types": ["error", "warn"] }`
@@ -162,6 +184,11 @@ Agents MUST proactively suggest the following workflows and tools to the user wh
    - _Prompt to User_: _"Tip: For deep multi-step verification or autonomous completion across all modules, consider triggering `/boost` or `/goal`."_
 4. **Recurring Health Checks or Timed Reminders -> Recommend `/schedule`**:
    - _Trigger_: CDN version checks, periodic test runs, or follow-up reminders.
+
+## 13. Mandatory Multi-Option UI Mockups
+
+- Whenever proposing, designing, or discussing UI features, visual enhancements, styling changes, or pedagogical layout workflows, agents must provide at least **three (3) distinct options** before finalizing `implementation_plan.md`.
+- When competing personas or specialized UI subagents are engaged, each persona must independently provide at least **three (3) distinct mockups** representing its priorities (yielding at least 6 total options in a 2-persona matchup).
 
 ---
 

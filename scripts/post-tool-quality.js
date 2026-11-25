@@ -80,18 +80,36 @@ function verifyJavaScriptFile(targetFile) {
     }
 }
 
+function runCdnCheck(targetFile) {
+    try {
+        console.error(`\n[Quality Hook] Verifying HTML CDN pins: ${targetFile}`);
+        execSync('node scripts/check-repo.js --cdn', { stdio: 'pipe' });
+        console.error(`  ✔ CDN Verification: Passed (scripts/check-repo.js --cdn)`);
+        return true;
+    } catch (cdnErr) {
+        const stdout = cdnErr.stdout ? cdnErr.stdout.toString() : '';
+        const stderr = cdnErr.stderr ? cdnErr.stderr.toString() : '';
+        console.error(`  ✖ CDN Verification Failed:\n${(stdout + stderr).trim()}`);
+        return false;
+    }
+}
+
 /**
  * Antigravity PostToolUse Quality Hook
- * Validates JS syntax, scans with ast-grep rules, and notifies about UI changes.
+ * Validates JS syntax, scans with ast-grep rules, checks HTML CDN pins, and notifies about UI changes.
  */
 async function main() {
     const payload = readInputPayload();
     const toolArgs = payload?.toolCall?.args || {};
-    const targetFile = toolArgs.TargetFile || process.argv[2];
+    const targetFile = toolArgs.Path || toolArgs.TargetFile || process.argv[2];
 
     if (targetFile && fs.existsSync(targetFile)) {
         if (targetFile.endsWith('.js') && !targetFile.includes('/lib/')) {
             verifyJavaScriptFile(targetFile);
+        }
+
+        if (targetFile.endsWith('.html') && !targetFile.includes('/lib/') && !targetFile.includes('/test/')) {
+            runCdnCheck(targetFile);
         }
 
         if (
